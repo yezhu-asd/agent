@@ -13,7 +13,7 @@ import warnings
 
 class LocalUserBehaviorDB:
     """
-    用户行为数据库的兼容性类
+    健康追踪数据库的兼容性类
     
     将旧接口重定向到新的UserBehaviorRepository
     """
@@ -30,12 +30,12 @@ class LocalUserBehaviorDB:
     def record_user_behavior(self, action_type: str, action_data: Optional[Dict[str, Any]] = None, 
                             technician_id: Optional[int] = None, session_id: Optional[str] = None, 
                             user_id: str = 'default_user'):
-        """兼容性方法：记录用户行为"""
+        """兼容性方法：记录追踪数据"""
         return self.repo.record_behavior(user_id, action_type, action_data, technician_id, session_id)
 
     def get_user_behaviors(self, user_id: str = 'default_user', action_type: Optional[str] = None, 
                           days_back: Optional[int] = None) -> List[Dict[str, Any]]:
-        """兼容性方法：获取用户行为历史"""
+        """兼容性方法：获取追踪历史"""
         return self.repo.get_user_behaviors(user_id, action_type, days_back)
 
     def update_user_preference(self, preference_type: str, preference_value: str, user_id: str = 'default_user'):
@@ -43,30 +43,30 @@ class LocalUserBehaviorDB:
         return self.repo.update_user_preference(user_id, preference_type, preference_value)
 
     def get_user_preferences(self, user_id: str = 'default_user', preference_type: Optional[str] = None) -> List[Dict[str, Any]]:
-        """兼容性方法：获取用户偏好"""
+        """兼容性方法：获取偏好"""
         return self.repo.get_user_preferences(user_id, preference_type)
 
     def create_recommendation(self, recommendation_type: str, content: str, 
                             technician_id: Optional[int] = None, user_id: str = 'default_user'):
-        """兼容性方法：创建推荐"""
+        """兼容性方法：创建建议"""
         return self.repo.create_recommendation(user_id, recommendation_type, content, technician_id)
 
     def get_pending_recommendations(self, user_id: str = 'default_user') -> List[Dict[str, Any]]:
-        """兼容性方法：获取待发送的推荐"""
+        """兼容性方法：获取待发送的建议"""
         return self.repo.get_pending_recommendations(user_id)
 
     def mark_recommendation_sent(self, recommendation_id: int):
-        """兼容性方法：标记推荐为已发送"""
+        """兼容性方法：标记建议为已发送"""
         return self.repo.mark_recommendation_sent(recommendation_id)
 
     def get_user_statistics(self, user_id: str = 'default_user', days_back: int = 30) -> Dict[str, Any]:
-        """兼容性方法：获取用户统计信息"""
+        """兼容性方法：获取追踪统计信息"""
         return self.repo.get_user_statistics(user_id, days_back)
 
 
 class LocalTechnicianDB:
     """
-    技师数据库的兼容性类
+    医生数据库的兼容性类
     
     将旧接口重定向到新的TechnicianRepository
     """
@@ -81,19 +81,19 @@ class LocalTechnicianDB:
         self.repo = TechnicianRepository(self.session_manager)
 
     def get_technician_by_name(self, session, name: str):
-        """兼容性方法：根据姓名获取技师信息"""
+        """兼容性方法：根据姓名获取医生信息"""
         return self.repo.get_technician_by_name(name)
 
     def get_all_technicians(self, session):
-        """兼容性方法：获取所有技师"""
+        """兼容性方法：获取所有医生"""
         return self.repo.get_all_technicians()
 
     def get_all_strengths(self, session):
-        """兼容性方法：获取所有技师专长"""
+        """兼容性方法：获取所有医生专长"""
         return self.repo.get_all_strengths()
 
     def add_technician(self, session, name: str, gender: Optional[str] = None, strength: Optional[str] = None):
-        """兼容性方法：添加技师"""
+        """兼容性方法：添加医生"""
         return self.repo.add_technician(name, gender, strength)
 
     def add_schedule(self, session, technician_id: int, start_time, end_time, status: str, appointment_id: Optional[int] = None):
@@ -101,15 +101,15 @@ class LocalTechnicianDB:
         return self.repo.add_schedule(technician_id, start_time, end_time, status, appointment_id)
 
     def get_technician_schedules(self, session, technician_id: int, date):
-        """兼容性方法：获取技师排班"""
+        """兼容性方法：获取医生排班"""
         return self.repo.get_technician_schedules(technician_id, date)
 
     def is_technician_available(self, session, technician_id: int, start_time, end_time) -> bool:
-        """兼容性方法：检查技师是否可用"""
+        """兼容性方法：检查医生是否可用"""
         return self.repo.is_technician_available(technician_id, start_time, end_time)
 
     def get_technicians_by_gender(self, session, gender: str):
-        """兼容性方法：根据性别获取技师"""
+        """兼容性方法：根据性别获取医生"""
         return self.repo.get_technicians_by_gender(gender)
 
 

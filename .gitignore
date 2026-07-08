@@ -27,12 +27,22 @@ ENV/
 
 # --- Data & runtime artifacts ---
 data/
+milvus_data/
 *.sqlite
 *.sqlite3
 *.db
 *.faiss
 *.index
 *.pkl
+
+# --- Large embedding data ---
+embedding/embedding_merged/
+embedding/checkpoints/
+*.npy
+!embedding/embed.py
+!embedding/merge_embeddings*.py
+!embedding/final_verification.py
+!embedding/upload_to_milvus.py
 
 # --- Logs ---
 *.log

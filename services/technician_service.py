@@ -1,4 +1,4 @@
-# utils/ai/technician_service.py
+# utils/ai/doctor_service.py
 
 from typing import List, Dict, Any
 from db.db_router import DatabaseRouter
@@ -7,13 +7,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 class TechnicianService:
-    """技师服务类 - 管理技师数据和默认初始化"""
-    
+    """医生服务类 - 管理医生数据和默认初始化"""
+
     def __init__(self):
         self.db = DatabaseRouter()
-        
-        # 默认技师数据（10人，其中有两位擅长内容接近）
-        self.default_technicians = [
+
+        # 默认医生数据（10人，其中有两位擅长内容接近）
+        self.default_doctors = [
             {
                 "name": "张伟",
                 "gender": "男",
@@ -26,7 +26,7 @@ class TechnicianService:
             },
             {
                 "name": "李娜",
-                "gender": "女", 
+                "gender": "女",
                 "strength": "手法细腻，擅长舒缓放松，适合压力大、睡眠差人群"
             },
             {
@@ -66,78 +66,78 @@ class TechnicianService:
             }
         ]
 
-    def initialize_default_technicians(self) -> bool:
-        """初始化默认技师数据"""
+    def initialize_default_doctors(self) -> bool:
+        """初始化默认医生数据"""
         try:
-            # 检查是否已有技师数据
-            existing_technicians = self.db.technicians.get_all_technicians()
-            
-            if existing_technicians:
-                logger.info(f"数据库中已有 {len(existing_technicians)} 位技师，跳过初始化")
+            # 检查是否已有医生数据
+            existing_doctors = self.db.doctors.get_all_doctors()
+
+            if existing_doctors:
+                logger.info(f"数据库中已有 {len(existing_doctors)} 位医生，跳过初始化")
                 return True
-            
-            logger.info("数据库中无技师数据，开始初始化默认技师")
-            
-            # 添加默认技师
-            for tech_data in self.default_technicians:
+
+            logger.info("数据库中无医生数据，开始初始化默认医生")
+
+            # 添加默认医生
+            for doc_data in self.default_doctors:
                 try:
-                    tech_id = self.db.technicians.add_technician(
-                        name=tech_data['name'],
-                        gender=tech_data['gender'],
-                        strength=tech_data['strength']
+                    doc_id = self.db.doctors.add_doctor(
+                        name=doc_data['name'],
+                        gender=doc_data['gender'],
+                        strength=doc_data['strength']
                     )
-                    logger.debug(f"添加技师: {tech_data['name']} (ID: {tech_id})")
-                    
+                    logger.debug(f"添加医生: {doc_data['name']} (ID: {doc_id})")
+
                 except Exception as e:
-                    logger.error(f"添加技师 {tech_data['name']} 失败: {e}")
+                    logger.error(f"添加医生 {doc_data['name']} 失败: {e}")
                     return False
-            
+
             # 验证初始化结果
-            final_count = len(self.db.technicians.get_all_technicians())
-            logger.info(f"技师初始化完成，共添加 {final_count} 位技师")
+            final_count = len(self.db.doctors.get_all_doctors())
+            logger.info(f"医生初始化完成，共添加 {final_count} 位医生")
             return True
-            
+
         except Exception as e:
-            logger.error(f"技师初始化失败: {e}")
+            logger.error(f"医生初始化失败: {e}")
             return False
 
-    def get_all_technicians(self) -> List[Dict[str, Any]]:
-        """获取所有技师信息"""
-        return self.db.technicians.get_all_technicians()
+    def get_all_doctors(self) -> List[Dict[str, Any]]:
+        """获取所有医生信息"""
+        return self.db.doctors.get_all_doctors()
 
-    def get_technician_by_name(self, name: str) -> Dict[str, Any]:
-        """根据姓名获取技师信息"""
-        return self.db.technicians.get_technician_by_name(name)
+    def get_doctor_by_name(self, name: str) -> Dict[str, Any]:
+        """根据姓名获取医生信息"""
+        return self.db.doctors.get_doctor_by_name(name)
 
-    def get_technician_by_id(self, technician_id: int) -> Dict[str, Any]:
-        """根据ID获取技师信息"""
-        return self.db.technicians.get_technician_by_id(technician_id)
+    def get_doctor_by_id(self, doctor_id: int) -> Dict[str, Any]:
+        """根据ID获取医生信息"""
+        return self.db.doctors.get_doctor_by_id(doctor_id)
 
-    def get_technician_schedules(self, technician_id: int, date) -> List[Dict[str, Any]]:
-        """获取技师指定日期的排班信息"""
-        return self.db.technicians.get_technician_schedules(technician_id, date)
+    def get_doctor_schedules(self, doctor_id: int, date) -> List[Dict[str, Any]]:
+        """获取医生指定日期的排班信息"""
+        return self.db.doctors.get_doctor_schedules(doctor_id, date)
 
-    def is_technician_available(self, technician_id: int, start_time, end_time) -> bool:
-        """检查技师在指定时间段是否可用"""
-        return self.db.technicians.is_technician_available(technician_id, start_time, end_time)
+    def is_doctor_available(self, doctor_id: int, start_time, end_time) -> bool:
+        """检查医生在指定时间段是否可用"""
+        return self.db.doctors.is_doctor_available(doctor_id, start_time, end_time)
 
-    def add_technician(self, name: str, gender: str = None, strength: str = None) -> int:
-        """添加新技师"""
-        return self.db.technicians.add_technician(name, gender, strength)
+    def add_doctor(self, name: str, gender: str = None, strength: str = None) -> int:
+        """添加新医生"""
+        return self.db.doctors.add_doctor(name, gender, strength)
 
-    def get_technicians_count(self) -> int:
-        """获取技师总数"""
-        technicians = self.db.technicians.get_all_technicians()
-        return len(technicians)
+    def get_doctors_count(self) -> int:
+        """获取医生总数"""
+        doctors = self.db.doctors.get_all_doctors()
+        return len(doctors)
 
-    def get_technician_by_id(self, technician_id: int) -> Dict[str, Any]:
-        """根据ID获取技师信息"""
-        return self.db.technicians.get_technician_by_id(technician_id)
+    def get_doctor_by_id(self, doctor_id: int) -> Dict[str, Any]:
+        """根据ID获取医生信息"""
+        return self.db.doctors.get_doctor_by_id(doctor_id)
 
-    def get_technician_schedules(self, technician_id: int, date) -> List[Dict[str, Any]]:
-        """获取技师指定日期的排班信息"""
-        return self.db.technicians.get_technician_schedules(technician_id, date)
+    def get_doctor_schedules(self, doctor_id: int, date) -> List[Dict[str, Any]]:
+        """获取医生指定日期的排班信息"""
+        return self.db.doctors.get_doctor_schedules(doctor_id, date)
 
-    def is_technician_available(self, technician_id: int, start_time, end_time) -> bool:
-        """检查技师在指定时间段是否可用"""
-        return self.db.technicians.is_technician_available(technician_id, start_time, end_time)
+    def is_doctor_available(self, doctor_id: int, start_time, end_time) -> bool:
+        """检查医生在指定时间段是否可用"""
+        return self.db.doctors.is_doctor_available(doctor_id, start_time, end_time)

@@ -29,12 +29,12 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
                        technician_id: Optional[int] = None, session_id: Optional[str] = None) -> int:
         """
         记录用户行为
-        
+
         Args:
             user_id: 用户ID
             action_type: 行为类型
             action_data: 行为数据
-            technician_id: 技师ID
+            technician_id: 医生ID
             session_id: 会话ID
             
         Returns:
@@ -183,7 +183,7 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
             user_id: 用户ID
             recommendation_type: 推荐类型
             content: 推荐内容
-            technician_id: 相关技师ID
+            technician_id: 相关医生ID
             
         Returns:
             新创建的推荐ID
@@ -272,7 +272,7 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
                 UserBehavior.created_at >= cutoff_date
             ).count()
             
-            # 最喜欢的技师
+            # 最喜欢的医生
             from sqlalchemy import func
             favorite_technician = session.query(
                 UserBehavior.technician_id,
@@ -306,13 +306,13 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
 
     def get_technician_popularity(self, days_back: int = 30) -> List[Dict[str, Any]]:
         """
-        获取技师受欢迎程度统计
+        获取医生受欢迎程度统计
         
         Args:
             days_back: 统计天数
             
         Returns:
-            技师受欢迎程度列表
+            医生受欢迎程度列表
         """
         with self.session_manager.session_scope() as session:
             cutoff_date = datetime.utcnow() - timedelta(days=days_back)

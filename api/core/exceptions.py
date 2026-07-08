@@ -29,10 +29,19 @@ async def api_exception_handler(request: Request, exc: BusinessException):
 async def general_exception_handler(request: Request, exc: Exception):
     """通用异常处理器"""
     import traceback
+
+    # 保留 HTTPException 的原始状态码（如 401），而不是全部返回 500
+    if isinstance(exc, HTTPException):
+        logger.warning(f"HTTP 异常: {exc.status_code} - {exc.detail}")
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": exc.detail}
+        )
+
     error_detail = f"未处理异常: {str(exc)}"
     stack_trace = traceback.format_exc()
     logger.error(f"{error_detail}\n{stack_trace}")
-    
+
     return JSONResponse(
         status_code=500,
         content={"error": "服务器内部错误"}

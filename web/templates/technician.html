@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>技师状态管理</title>
+    <title>医生状态管理</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -239,27 +239,27 @@
         <div class="header">
             <h2>
                 <i class="fas fa-users"></i>
-                技师状态管理
+                医生状态管理
             </h2>
-            <p>实时查看技师工作状态和个人信息</p>
+            <p>实时查看医生工作状态和专业信息</p>
         </div>
         
         <div class="content">
             <div class="stats-grid">
                 <div class="stat-card">
                     <i class="fas fa-users"></i>
-                    <div class="number">{{ technicians|length }}</div>
-                    <div class="label">总技师数</div>
+                    <div class="number">{{ doctors|length }}</div>
+            <div class="label">总医生数</div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-user-check"></i>
-                    <div class="number">{{ technicians|selectattr('gender', 'equalto', '男')|list|length }}</div>
-                    <div class="label">男技师</div>
+                    <div class="number">{{ doctors|selectattr('gender', 'equalto', '男')|list|length }}</div>
+                    <div class="label">男医生</div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-user-check"></i>
-                    <div class="number">{{ technicians|selectattr('gender', 'equalto', '女')|list|length }}</div>
-                    <div class="label">女技师</div>
+                    <div class="number">{{ doctors|selectattr('gender', 'equalto', '女')|list|length }}</div>
+                    <div class="label">女医生</div>
                 </div>
             </div>
             
@@ -267,7 +267,7 @@
                 <table>
                     <thead>
                         <tr>
-                            <th><i class="fas fa-id-badge"></i> 技师ID</th>
+                            <th><i class="fas fa-id-badge"></i> 医生 ID</th>
                             <th><i class="fas fa-user"></i> 姓名</th>
                             <th><i class="fas fa-venus-mars"></i> 性别</th>
                             <th><i class="fas fa-dumbbell"></i> 力气/倾向</th>
@@ -275,21 +275,21 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for tech in technicians %}
+                        {% for doc in doctors %}
                         <tr>
-                            <td><strong>{{ tech.id }}</strong></td>
-                            <td>{{ tech.name }}</td>
+                            <td><strong>{{ doc.id }}</strong></td>
+                            <td>{{ doc.name }}</td>
                             <td>
-                                {% if tech.gender %}
-                                    <span class="gender-badge {{ 'gender-male' if tech.gender == '男' else 'gender-female' }}">
-                                        <i class="fas {{ 'fa-mars' if tech.gender == '男' else 'fa-venus' }}"></i>
-                                        {{ tech.gender }}
+                                {% if doc.gender %}
+                                    <span class="gender-badge {{ 'gender-male' if doc.gender == '男' else 'gender-female' }}">
+                                        <i class="fas {{ 'fa-mars' if doc.gender == '男' else 'fa-venus' }}"></i>
+                                        {{ doc.gender }}
                                     </span>
                                 {% else %}
                                     <span style="color: #999;">未设置</span>
                                 {% endif %}
                             </td>
-                            <td>{{ tech.strength or '标准' }}</td>
+                            <td>{{ doc.strength or '标准' }}</td>
                             <td>
                                 <span class="status-badge status-available">
                                     <i class="fas fa-check-circle"></i>

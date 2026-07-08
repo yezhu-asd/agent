@@ -1,11 +1,11 @@
 """
-行为记录器 - 专门负责记录用户的各种行为数据
+行为记录器 - 专门负责记录健康追踪数据
 
 职责：
-1. 记录用户的操作行为（预约、咨询、取消等）
-2. 存储行为的上下文信息（时间、技师、服务等）
-3. 维护行为数据的完整性和一致性
-4. 提供行为数据的查询接口
+1. 记录问诊与预约相关数据
+2. 存储上下文信息（时间、医生、项目等）
+3. 维护数据完整性和一致性
+4. 提供数据查询接口
 """
 
 from typing import Dict, Any, Optional, List
@@ -21,7 +21,7 @@ class BehaviorRecorder:
         初始化行为记录器
         
         Args:
-            behavior_service: 用户行为服务实例
+            behavior_service: 追踪服务实例
         """
         self.behavior_service = behavior_service
         self.logger = logging.getLogger(__name__)
@@ -39,12 +39,12 @@ class BehaviorRecorder:
     def record_behavior(self, action_type: str, action_data: Dict[str, Any] = None, 
                        technician_id: int = None, session_id: str = None) -> Optional[int]:
         """
-        记录用户行为
+        记录追踪数据
         
         Args:
             action_type: 行为类型 (appointment, consultation, cancel等)
             action_data: 行为相关数据
-            technician_id: 技师ID
+            technician_id: 医生ID
             session_id: 会话ID
             
         Returns:
@@ -79,11 +79,11 @@ class BehaviorRecorder:
     def record_appointment_behavior(self, appointment_data: Dict[str, Any], 
                                   technician_id: int = None, session_id: str = None) -> Optional[int]:
         """
-        记录预约行为的便捷方法
+        记录预约追踪数据的便捷方法
         
         Args:
             appointment_data: 预约相关数据
-            technician_id: 技师ID  
+            technician_id: 医生ID  
             session_id: 会话ID
             
         Returns:
@@ -99,7 +99,7 @@ class BehaviorRecorder:
     def record_consultation_behavior(self, consultation_data: Dict[str, Any], 
                                    session_id: str = None) -> Optional[int]:
         """
-        记录咨询行为的便捷方法
+        记录咨询追踪数据的便捷方法
         
         Args:
             consultation_data: 咨询相关数据

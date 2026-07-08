@@ -1,11 +1,11 @@
 """
-偏好管理器 - 专门负责管理用户的偏好数据
+偏好管理器 - 专门负责管理健康追踪相关的偏好数据
 
 职责：
-1. 从预约数据中提取和更新用户偏好
-2. 管理技师偏好、时间偏好、服务偏好等
+1. 从预约数据中提取和更新偏好
+2. 管理医生、时间、服务等偏好
 3. 提供偏好数据的查询和统计
-4. 处理偏好的变化和趋势分析
+4. 处理偏好变化和趋势分析
 """
 
 from typing import Dict, Any, Optional
@@ -14,7 +14,7 @@ import logging
 
 
 class PreferenceManager:
-    """偏好管理器 - 负责用户偏好的管理和分析"""
+    """偏好管理器 - 负责健康追踪偏好的管理和分析"""
     
     def __init__(self, behavior_service = None):
         """
@@ -36,50 +36,50 @@ class PreferenceManager:
             # 如果没有service，返回None（应该在组件初始化时提供适当的处理）
             return None
     
-    def update_preferences_from_appointment(self, action_data: Dict[str, Any], technician_id: int = None):
+    def update_preferences_from_appointment(self, action_data: Dict[str, Any], doctor_id: int = None):
         """
         从预约数据中更新用户偏好
-        
+
         Args:
             action_data: 预约行为数据
-            technician_id: 技师ID
+            doctor_id: 医生ID
         """
         try:
-            # 技师偏好
-            if technician_id:
-                self.update_technician_preference(technician_id)
-            
+            # 医生偏好
+            if doctor_id:
+                self.update_doctor_preference(doctor_id)
+
             # 时间偏好
             if action_data.get('start_time'):
                 self.update_time_preference(action_data['start_time'])
-            
+
             # 服务时长偏好
             if action_data.get('duration'):
                 self.update_duration_preference(action_data['duration'])
-            
+
             # 服务项目偏好
             if action_data.get('project'):
                 self.update_service_preference(action_data['project'])
-            
-            # 技师偏好类型（力气大小等）
+
+            # 医生偏好类型（力气大小等）
             if action_data.get('preference'):
-                self.update_technician_type_preference(action_data['preference'])
+                self.update_doctor_type_preference(action_data['preference'])
                 
         except Exception as e:
             self.logger.error(f"更新用户偏好失败: {str(e)}")
     
-    def update_technician_preference(self, technician_id: int):
+    def update_doctor_preference(self, doctor_id: int):
         """
-        更新技师偏好
-        
+        更新医生偏好
+
         Args:
-            technician_id: 技师ID
+            doctor_id: 医生ID
         """
         try:
-            self.behavior_db.update_user_preference('technician', str(technician_id))
-            self.logger.info(f"更新技师偏好: {technician_id}")
+            self.behavior_db.update_user_preference('technician', str(doctor_id))
+            self.logger.info(f"更新医生偏好: {doctor_id}")
         except Exception as e:
-            self.logger.error(f"更新技师偏好失败: {str(e)}")
+            self.logger.error(f"更新医生偏好失败: {str(e)}")
     
     def update_time_preference(self, start_time: str):
         """
@@ -131,18 +131,18 @@ class PreferenceManager:
         except Exception as e:
             self.logger.error(f"更新服务偏好失败: {str(e)}")
     
-    def update_technician_type_preference(self, technician_type: str):
+    def update_doctor_type_preference(self, doctor_type: str):
         """
-        更新技师类型偏好
-        
+        更新医生类型偏好
+
         Args:
-            technician_type: 技师类型偏好（如：力气大、手法轻等）
+            doctor_type: 医生类型偏好（如：力气大、手法轻等）
         """
         try:
-            self.behavior_db.update_user_preference('technician_type', technician_type)
-            self.logger.info(f"更新技师类型偏好: {technician_type}")
+            self.behavior_db.update_user_preference('technician_type', doctor_type)
+            self.logger.info(f"更新医生类型偏好: {doctor_type}")
         except Exception as e:
-            self.logger.error(f"更新技师类型偏好失败: {str(e)}")
+            self.logger.error(f"更新医生类型偏好失败: {str(e)}")
     
     def get_user_preferences(self) -> Dict[str, Any]:
         """
@@ -157,19 +157,19 @@ class PreferenceManager:
             self.logger.error(f"获取用户偏好失败: {str(e)}")
             return {}
     
-    def get_preferred_technician_id(self) -> Optional[int]:
+    def get_preferred_doctor_id(self) -> Optional[int]:
         """
-        获取偏好的技师ID
-        
+        获取偏好的医生ID
+
         Returns:
-            int: 技师ID，如果没有偏好则返回None
+            int: 医生ID，如果没有偏好则返回None
         """
         try:
             preferences = self.get_user_preferences()
-            technician_id = preferences.get('technician')
-            return int(technician_id) if technician_id else None
+            doctor_id = preferences.get('technician')
+            return int(doctor_id) if doctor_id else None
         except Exception as e:
-            self.logger.error(f"获取偏好技师ID失败: {str(e)}")
+            self.logger.error(f"获取偏好医生ID失败: {str(e)}")
             return None
     
     def get_preferred_time_period(self) -> Optional[str]:
@@ -211,16 +211,16 @@ class PreferenceManager:
             preferences = self.get_user_preferences()
             
             summary = {
-                'has_technician_preference': bool(preferences.get('technician')),
+                'has_doctor_preference': bool(preferences.get('technician')),
                 'has_time_preference': bool(preferences.get('time_period')),
                 'has_service_preference': bool(preferences.get('service')),
                 'has_duration_preference': bool(preferences.get('duration')),
                 'preference_count': len([v for v in preferences.values() if v])
             }
-            
+
             # 添加具体偏好内容
             if preferences.get('technician'):
-                summary['preferred_technician_id'] = int(preferences['technician'])
+                summary['preferred_doctor_id'] = int(preferences['technician'])
             if preferences.get('time_period'):
                 summary['preferred_time'] = preferences['time_period']
             if preferences.get('service'):

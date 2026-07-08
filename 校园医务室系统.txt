@@ -1,0 +1,411 @@
+# 校园医务室问诊预约系统统一架构方案
+
+## 1. 项目定位
+
+本系统是一个面向校园医务室场景的智能问诊预约平台，基于多 Agent 架构构建，目标是在不改变现有技术栈的前提下，实现：
+
+- 校园用户登录与身份识别
+- 症状问诊与初步评估
+- 风险识别与紧急升级
+- 校医室预约与调度
+- 复诊与历史记忆
+- 健康知识问答
+- 会话隔离与多用户并发
+
+系统定位为：
+
+- 校园健康咨询入口
+- 症状问诊与初步评估助手
+- 校医室预约与调度助手
+- 复诊跟踪助手
+- 健康知识问答助手
+
+系统不替代医生，只做辅助判断和流程编排。
+
+---
+
+## 2. 设计原则
+
+### 2.1 业务原则
+- 只做建议，不做最终医疗结论
+- 只要进入问诊流程，系统必须倾向“建议预约”或“建议进一步评估”
+- 不输出“无需预约”这类绝对否定性结论
+- 高风险症状优先升级
+- 最终医疗判断由人工校医完成
+
+### 2.2 工程原则
+- 保持原有技术栈不变
+- Agent 无状态
+- 状态统一存储到 Redis / 数据库
+- 同一会话串行处理
+- 结构化槽位驱动
+- Prompt 尽量结构化输出 JSON
+
+---
+
+## 3. 最终 Agent 架构
+
+系统收敛为 3 个核心 Agent：
+
+1. TaskClassificationAgent
+2. DoctorAgent
+3. AppointmentAgent
+
+---
+
+## 4. Agent 职责说明
+
+### 4.1 TaskClassificationAgent
+
+职责：
+- 判断用户意图
+- 区分是进入医生流程还是预约流程
+- 处理简单闲聊
+- 处理基础问答
+- 判断用户是否明确表达“要预约”
+- 路由请求到 DoctorAgent 或 AppointmentAgent
+
+不负责：
+- 不收集姓名/手机号/身份信息
+- 不引导补充症状
+- 不做分诊
+- 不做风险判断
+
+### 4.2 DoctorAgent
+
+职责：
+- 引导用户补充症状
+- 追问症状细节
+- 初步评估风险
+- 判断是否需要预约
+- 判断是否需要尽快就医
+- 识别红旗症状
+- 输出保守建议
+
+核心原则：
+- 不能输出“无需预约”
+- 不能做最终排除性结论
+- 默认输出“建议预约”或“建议进一步评估”
+- 遇到风险症状立即升级
+
+### 4.3 AppointmentAgent
+
+职责：
+- 抽取预约槽位
+- 匹配可用时段
+- 检查冲突
+- 创建预约
+- 改期
+- 取消预约
+
+---
+
+## 5. 业务流程
+
+### 5.1 登录流程
+
+```text
+学号登录
+  ↓
+后台获取用户信息
+  ↓
+生成 Token / Session
+  ↓
+进入问诊或预约流程
+```
+
+### 5.2 问诊流程
+
+```text
+用户输入症状
+  ↓
+TaskClassificationAgent 判断是否进入医生流程
+  ↓
+DoctorAgent 引导补充症状
+  ↓
+DoctorAgent 做初步评估
+  ↓
+若需预约 → AppointmentAgent
+  ↓
+返回结果
+```
+
+### 5.3 预约流程
+
+```text
+用户明确表达预约意图
+  ↓
+TaskClassificationAgent 判断为预约流程
+  ↓
+AppointmentAgent 抽取预约槽位
+  ↓
+检查排班与冲突
+  ↓
+确认预约
+```
+
+### 5.4 紧急流程
+
+```text
+识别红旗症状
+  ↓
+立即升级
+  ↓
+输出紧急提示
+  ↓
+建议立即就医/联系急救
+```
+
+---
+
+## 6. 状态机设计
+
+### 6.1 全局状态
+- CLASSIFY
+- DOCTOR_ASSESSMENT
+- APPOINTMENT
+- COMPLETED
+- EMERGENCY
+
+### 6.2 TaskClassificationAgent 状态
+- CLASSIFY
+- ROUTE_TO_DOCTOR
+- ROUTE_TO_APPOINTMENT
+- REPLY_FAQ
+- GENERAL_CHAT
+
+### 6.3 DoctorAgent 状态
+- INITIAL_ASSESSMENT
+- QUESTIONING
+- RISK_CHECK
+- RECOMMENDATION
+- APPOINTMENT_NEEDED
+- EMERGENCY
+- DONE
+
+### 6.4 AppointmentAgent 状态
+- COLLECT_SLOT
+- CHECK_AVAILABILITY
+- CONFIRM_BOOKING
+- DONE
+
+---
+
+## 7. 结构化槽位设计
+
+### 7.1 问诊槽位
+由后台用户信息 + 当前症状组成，不再要求分类 Agent 收集基础身份信息。
+
+```json
+{
+  "user_id": "",
+  "name": "",
+  "role": "student",
+  "grade_or_department": "",
+  "chief_complaint": "",
+  "symptom_duration": "",
+  "accompanying_symptoms": [],
+  "allergy_history": [],
+  "past_medical_history": [],
+  "fever": false,
+  "trauma": false,
+  "medication_taken": [],
+  "red_flags": []
+}
+```
+
+### 7.2 预约槽位
+
+```json
+{
+  "service_type": "campus_clinic_visit",
+  "preferred_date": "",
+  "preferred_time_period": "",
+  "urgency": "normal",
+  "appointment_reason": "",
+  "location": "campus_clinic"
+}
+```
+
+---
+
+## 8. 记忆系统设计
+
+### 8.1 记忆类型
+- 对话历史
+- 短期记忆
+- 摘要记忆
+- 行为记忆
+
+### 8.2 Redis Key 设计
+
+| 类型     | Key                                   |
+| -------- | ------------------------------------- |
+| 登录态   | `auth:token:{token}`                  |
+| 会话状态 | `conversation:{id}:state`             |
+| 对话历史 | `conversation:{id}:history`           |
+| 症状槽位 | `conversation:{id}:medical_slots`     |
+| 预约槽位 | `conversation:{id}:appointment_slots` |
+| 摘要记忆 | `conversation:{id}:summary_memory`    |
+| 行为记忆 | `conversation:{id}:behavior_memory`   |
+| 会话锁   | `conversation:{id}:lock`              |
+| 风险记录 | `conversation:{id}:risk_events`       |
+
+---
+
+## 9. 医疗安全规则
+
+### 9.1 不允许的输出
+- 不用预约
+- 你没事
+- 不需要进一步处理
+- 完全正常
+
+### 9.2 允许的输出
+- 建议预约
+- 建议尽快预约
+- 建议进一步评估
+- 如症状加重请立即就医
+- 建议由校医确认
+
+### 9.3 红旗症状
+一旦检测到以下情况，必须立即升级：
+- 呼吸困难
+- 胸痛
+- 昏迷
+- 抽搐
+- 大出血
+- 严重过敏
+- 高热不退
+- 严重外伤
+
+---
+
+## 10. 数据库设计建议
+
+### 10.1 users
+- id
+- phone
+- name
+- role
+- grade_or_department
+- created_at
+
+### 10.2 consultations
+- id
+- user_id
+- conversation_id
+- chief_complaint
+- risk_level
+- doctor_summary
+- created_at
+
+### 10.3 appointments
+- id
+- user_id
+- conversation_id
+- appointment_time
+- status
+- created_at
+
+### 10.4 risk_events
+- id
+- user_id
+- conversation_id
+- risk_type
+- description
+- created_at
+
+---
+
+## 11. 目录结构建议
+
+```text
+campus_medical_agent/
+├── agents/
+│   ├── base_agent.py
+│   ├── classification_agent.py
+│   ├── doctor_agent.py
+│   └── appointment_agent.py
+├── api/
+├── services/
+├── db/
+├── config/
+├── web/
+├── data/
+├── tests/
+├── app.py
+└── requirements.txt
+```
+
+---
+
+## 12. 请求链路
+
+### 12.1 问诊链路
+
+```text
+用户输入
+  ↓
+TaskClassificationAgent
+  ↓
+DoctorAgent
+  ↓
+必要时 AppointmentAgent
+  ↓
+返回结果
+```
+
+### 12.2 预约链路
+
+```text
+用户明确要预约
+  ↓
+TaskClassificationAgent
+  ↓
+AppointmentAgent
+  ↓
+返回预约结果
+```
+
+---
+
+## 13. 最终统一结论
+
+### TaskClassificationAgent
+- 只做分类、路由、闲聊、基础问答
+- 不收集基础身份信息
+- 不引导症状
+
+### DoctorAgent
+- 负责症状补充、追问、风险判断
+- 决定是否建议预约
+- 不能输出无需预约
+- 默认保守地建议预约或进一步评估
+
+### AppointmentAgent
+- 负责所有预约相关动作
+- 处理明确预约意图
+- 完成预约、改期、取消
+
+---
+
+## 14. 技术选型
+
+- FastAPI
+- Jinja2
+- HTML / CSS / JS
+- Redis
+- MySQL
+- Azure OpenAI
+- Pinecone
+- 自定义 Orchestrator
+- logging
+- 环境变量 + Settings
+
+---
+
+## 15. 总结
+
+本系统在技术栈保持不变的前提下，将原有心理咨询室预约 agent 迁移为校园医务室问诊预约系统，通过合并 Agent 职责、收敛流程、强化医疗安全规则，形成一套更适合校园场景的轻量级多 Agent 医疗辅助平台。
+

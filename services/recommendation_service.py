@@ -1,8 +1,8 @@
 """
-推荐调度服务
+健康追踪调度服务
 
 职责：
-1. 定时生成用户行为推荐
+1. 定时生成健康追踪建议
 2. 管理推荐调度任务
 3. 提供手动触发推荐功能
 """
@@ -28,7 +28,7 @@ class RecommendationService:
     
     @property
     def behavior_agent(self):
-        """懒加载用户行为服务"""
+        """懒加载健康追踪服务"""
         if self._behavior_agent is None:
             from services.user_behavior_service import UserBehaviorService
             self._behavior_agent = UserBehaviorService()
@@ -38,8 +38,8 @@ class RecommendationService:
         """定时生成推荐的任务"""
         try:
             logger.info("开始执行定时推荐生成任务...")
-            # 通过用户行为服务分析用户模式并生成推荐
-            # TODO: 实现基于用户行为的推荐逻辑
+            # 通过健康追踪数据生成建议
+            # TODO: 实现基于健康追踪数据的建议逻辑
             recommendations = []
             
             if recommendations:

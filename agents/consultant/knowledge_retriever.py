@@ -43,8 +43,9 @@ class KnowledgeRetriever:
             for i, doc in enumerate(relevant_docs, 1):
                 score = doc.get('score', 0)
                 category = doc.get('category', '未知')
-                content = doc.get('content', '')[:80]
-                print(f"  {i}. [相关度:{score:.3f}] [分类:{category}] {content}...")
+                # 优先显示 answer 或 ask，其次 content
+                snippet = (doc.get('answer', '') or doc.get('ask', '') or doc.get('content', '') or '')[:80]
+                print(f"  {i}. [相关度:{score:.3f}] [分类:{category}] {snippet}...")
             print(f"📊 知识库统计: 共检索到 {len(relevant_docs)} 条相关知识")
         else:
             print(f"⚠️ 知识库检索: 未找到与 '{query}' 相关的知识")

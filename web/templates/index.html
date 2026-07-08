@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>智能预约助手 - AI聊天机器人</title>
+    <title>🏥 校园医务室 - 智能问诊预约系统</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -320,6 +320,79 @@
         
         .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        /* 机器人快捷按钮 */
+        .bot-quick-btn {
+            transition: all 0.2s ease;
+        }
+        .bot-quick-btn:hover {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+            color: white !important;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+        }
+        .bot-quick-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 风险警告条样式 */
+        .risk-alert {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8c42 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 15px 30px;
+            border-left: 5px solid #ff3333;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .risk-alert.high-risk {
+            background: linear-gradient(135deg, #d63031 0%, #e84393 100%);
+            border-left-color: #ae2012;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .risk-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .risk-text {
+            font-weight: 500;
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .risk-close {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            flex-shrink: 0;
+            transition: background 0.3s ease;
+        }
+        
+        .risk-close:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
         
         @keyframes typing {
             0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
@@ -371,7 +444,7 @@
                 智能预约助手
             </div>
             <div class="header-subtitle">
-                AI驱动的按摩房预约系统 - 为您提供便捷智能的预约体验
+                AI驱动的校园医务室问诊系统 - 为您提供便捷智能的医学咨询和预约服务
             </div>
         </div>
         
@@ -387,15 +460,24 @@
             </button>
             <button class="nav-btn" onclick="window.location.href='/technician'">
                 <i class="fas fa-users"></i>
-                技师状态
+                医生状态
             </button>
             <button class="nav-btn" onclick="window.location.href='/technician_schedule'">
                 <i class="fas fa-calendar-alt"></i>
-                技师排班
+                医生值班
             </button>
             <button class="nav-btn" id="clear-btn">
                 <i class="fas fa-trash-alt"></i>
                 清空对话
+            </button>
+        </div>
+        
+        <!-- 风险警告条 -->
+        <div class="risk-alert" id="riskAlert" style="display: none;">
+            <span class="risk-icon">⚠️</span>
+            <span class="risk-text" id="riskText">您描述的症状存在风险，建议立即就医或拨打校医室咨询电话</span>
+            <button class="risk-close" onclick="closeRiskAlert()" title="关闭警告">
+                ✕
             </button>
         </div>
         
@@ -412,8 +494,8 @@
                     </div>
                     <div class="bot-reply">
                         我可以帮您：<br>
-                        • 🕐 预约按摩服务<br>
-                        • 👨‍⚕️ 查询技师状态<br>
+                        • 🕐 预约医生问诊<br>
+                        • 👨‍⚕️ 查询医生状态<br>
                         • 📅 安排预约时间<br>
                         • ❓ 解答相关问题
                     </div>
@@ -446,6 +528,56 @@
         </div>
     </div>
     <script>
+    // 检查登录状态
+    function checkAuth() {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            // 未登录，重定向到登录页
+            window.location.href = '/login';
+            return null;
+        }
+        return token;
+    }
+
+    // 启用/禁用界面
+    function setUIEnabled(enabled) {
+        document.getElementById('send-btn').disabled = !enabled;
+        document.getElementById('user-input').disabled = !enabled;
+        document.getElementById('clear-btn').disabled = !enabled;
+    }
+
+    // 显示登出按钮
+    function showLogoutButton() {
+        const header = document.querySelector('.header');
+        if (header) {
+            const logoutBtn = document.createElement('button');
+            logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> 登出';
+            logoutBtn.style.cssText = 'position: absolute; right: 30px; top: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;';
+            logoutBtn.onclick = logout;
+            header.appendChild(logoutBtn);
+        }
+    }
+
+    // 登出
+    async function logout() {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (e) {
+            console.log('Logout error:', e);
+        }
+
+        localStorage.removeItem('token');
+        localStorage.removeItem('conversation_id');
+        localStorage.removeItem('user_info');
+        window.location.href = '/login';
+    }
+
     const chatBox = document.getElementById('chat-box');
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
@@ -500,6 +632,21 @@
 
     function updateLastBotMessage(text) {
         if (lastBotBubble) {
+            // 先提取 [BUTTONS] 标记（在渲染 REPLY 之前）
+            let buttonsHtml = '';
+            const buttonsMatch = text.match(/\[BUTTONS\]([\s\S]*?)(?=\n|$)/);
+            if (buttonsMatch) {
+                const buttonsText = buttonsMatch[1].trim();
+                const buttonLabels = buttonsText.split(',').map(s => s.trim()).filter(Boolean);
+                if (buttonLabels.length > 0) {
+                    buttonsHtml = '<div class="bot-quick-buttons" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">'
+                        + buttonLabels.map(label =>
+                            `<button class="bot-quick-btn" onclick="window.sendQuickReply(this.textContent)" style="padding:8px 16px;border-radius:20px;border:2px solid #4facfe;background:white;color:#4facfe;font-size:14px;cursor:pointer;transition:all 0.2s;hover {background:#4facfe;color:white;}">${label}</button>`
+                        ).join('')
+                        + '</div>';
+                }
+            }
+
             // 用正则分割所有 [THOUGHT]、[REPLY]、[STATE] 标签及其内容
             const pattern = /(\[THOUGHT[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|$)|(\[REPLY[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|$)/g;
             let result = [];
@@ -511,8 +658,8 @@
                     result.push(`<div class="bot-thought">${thoughtText}</div>`);
                 } else if (match[2]) {
                     // REPLY - 最终回复，使用突出颜色
-                    const replyText = match[2].replace(/\[REPLY[^\]]*\]/, '').trim().replace(/\n/g, '<br>');
-                    
+                    let replyText = match[2].replace(/\[REPLY[^\]]*\]/, '').replace(/\[BUTTONS\][^\n]*\n?/g, '').trim().replace(/\n/g, '<br>');
+
                     // 检查回复类型并应用不同样式
                     let styledReply = replyText;
                     if (replyText.includes('预约成功') || replyText.includes('已为您预约')) {
@@ -528,12 +675,17 @@
                         // 普通回复，使用突出的颜色
                         styledReply = `<div class="bot-reply">${replyText}</div>`;
                     }
-                    
+
                     result.push(styledReply);
                 }
             }
+
+            // 追加按钮到末尾（只在包含 [BUTTONS] 时）
+            if (buttonsHtml) {
+                result.push(buttonsHtml);
+            }
             lastBotBubble.innerHTML = result.join('');
-            
+
             // 内容更新后自动滚动
             requestAnimationFrame(() => {
                 chatBox.scrollTo({
@@ -544,10 +696,97 @@
         }
     }
 
+    // 发送快捷回复（点击机器人消息中的按钮）
+    window.sendQuickReply = async function(label) {
+        // 直接发送按钮文本作为用户输入（复用原有提交逻辑）
+        userInput.value = label;
+        chatForm.dispatchEvent(new Event('submit'));
+    };
+
+    // 关闭风险警告条
+    function closeRiskAlert() {
+        const alert = document.getElementById('riskAlert');
+        alert.style.display = 'none';
+    }
+
+    // 检测风险症状
+    function checkRiskSymptoms(text) {
+        // 红旗症状关键词
+        const highRiskKeywords = [
+            '胸痛', '胸闷', '心绞痛', '心梗',
+            '呼吸困难', '窒息', '喘不上气',
+            '晕厥', '意识不清', '昏迷',
+            '严重头痛', '头炸裂', '脑血管',
+            '持续高烧', '39度以上', '烧到40度',
+            '严重腹痛', '腹部剧痛',
+            '持续出血', '大出血',
+            '中毒', '中风', '脑梗',
+            '过敏', '过敏性休克', '严重过敏',
+            '骨折', '严重外伤', '创伤'
+        ];
+        
+        const mediumRiskKeywords = [
+            '持续呕吐', '无法进食',
+            '意识模糊',
+            '严重腹泻',
+            '持续头晕',
+            '大量出血'
+        ];
+        
+        const lowerText = text.toLowerCase();
+        
+        // 检查高风险
+        for (let keyword of highRiskKeywords) {
+            if (lowerText.includes(keyword.toLowerCase())) {
+                return { risk: 'high', keyword: keyword };
+            }
+        }
+        
+        // 检查中等风险
+        for (let keyword of mediumRiskKeywords) {
+            if (lowerText.includes(keyword.toLowerCase())) {
+                return { risk: 'medium', keyword: keyword };
+            }
+        }
+        
+        return { risk: 'none', keyword: null };
+    }
+
+    // 显示风险警告
+    function showRiskAlert(riskLevel, keyword) {
+        const alert = document.getElementById('riskAlert');
+        const riskText = document.getElementById('riskText');
+        
+        if (riskLevel === 'high') {
+            alert.classList.add('high-risk');
+            riskText.textContent = `⚠️ 紧急提示：您提到的"${keyword}"属于高风险症状，请立即就医或拨打120急救电话！`;
+        } else if (riskLevel === 'medium') {
+            alert.classList.remove('high-risk');
+            riskText.textContent = `⚠️ 风险提示：您提到的"${keyword}"需要尽快就医，建议立即就医或拨打校医室咨询电话`;
+        }
+        
+        alert.style.display = 'flex';
+    }
+
     chatForm.onsubmit = async function(e) {
         e.preventDefault();
         const text = userInput.value.trim();
         if (!text) return;
+        
+        // 检测用户输入中的风险症状
+        const riskCheck = checkRiskSymptoms(text);
+        if (riskCheck.risk !== 'none') {
+            showRiskAlert(riskCheck.risk, riskCheck.keyword);
+        } else {
+            closeRiskAlert();
+        }
+        
+        // 获取 token
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
         
         // 禁用发送按钮
         const sendBtn = document.getElementById('send-btn');
@@ -567,9 +806,19 @@
         try {
             const res = await fetch('/chat/stream', {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({message: text})
             });
+            
+            if (res.status === 401) {
+                // Token 失效，重定向到登录
+                localStorage.removeItem('token');
+                window.location.href = '/login';
+                return;
+            }
             
             hideTypingIndicator();
             
@@ -616,8 +865,25 @@
         }
     });
     
-    // 页面加载完成后聚焦输入框
+    // 页面加载完成后检查登录状态
     window.addEventListener('load', function() {
+        const token = checkAuth();
+        if (token) {
+            showLogoutButton();
+            // 显示用户信息
+            const userInfo = localStorage.getItem('user_info');
+            if (userInfo) {
+                try {
+                    const info = JSON.parse(userInfo);
+                    const title = document.querySelector('.header h1');
+                    if (title) {
+                        title.innerHTML = `欢迎，${info.user_name} <span style="font-size: 14px; margin-left: 10px;">(${info.phone})</span>`;
+                    }
+                } catch (e) {
+                    console.log('Parse user info error:', e);
+                }
+            }
+        }
         userInput.focus();
     });
     </script>

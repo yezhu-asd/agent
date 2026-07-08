@@ -24,14 +24,15 @@ class KnowledgeRepository(BaseKnowledgeRepository):
         """
         self.session_manager = session_manager
 
-    def add_document(self, content: str, category: str, keywords: Optional[List[str]] = None, 
-                    embedding: Optional[List[float]] = None) -> int:
+    def add_document(self, content: str, category: str, title: Optional[str] = None, 
+                    keywords: Optional[List[str]] = None, embedding: Optional[List[float]] = None) -> int:
         """
         添加知识文档
         
         Args:
             content: 文档内容
             category: 文档分类
+            title: 文档标题（可选，默认为分类）
             keywords: 关键词列表
             embedding: 嵌入向量
             
@@ -40,6 +41,7 @@ class KnowledgeRepository(BaseKnowledgeRepository):
         """
         with self.session_manager.session_scope() as session:
             document = KnowledgeDocument(
+                title=title or category,  # 如果未提供 title，使用 category
                 content=content,
                 category=category,
                 keywords=keywords,
@@ -259,6 +261,7 @@ class KnowledgeRepository(BaseKnowledgeRepository):
         """将文档对象转换为字典"""
         return {
             'id': document.id,
+            'title': document.title,
             'content': document.content,
             'category': document.category,
             'keywords': document.keywords,

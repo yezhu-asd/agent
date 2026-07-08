@@ -20,8 +20,8 @@ from pydantic import SecretStr
 load_dotenv()
 
 
-CHAT_PROVIDERS = {"openai", "qwen", "deepseek", "zhipu", "openai-compatible"}
-EMBEDDING_PROVIDERS = {"openai", "qwen", "zhipu", "openai-compatible"}
+CHAT_PROVIDERS = {"openai", "qwen", "deepseek", "zhipu", "openai-compatible", "volcengine"}
+EMBEDDING_PROVIDERS = {"openai", "qwen", "zhipu", "openai-compatible", "volcengine"}
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -67,7 +67,7 @@ def create_chat_model(temperature: float = 0):
 
     raise ValueError(
         f"Unsupported MODEL_PROVIDER={provider!r}. "
-        "Use azure, qwen, deepseek, zhipu, openai, or openai-compatible."
+        "Use azure, qwen, deepseek, zhipu, openai, openai-compatible, or volcengine."
     )
 
 
@@ -93,7 +93,26 @@ def create_embedding_model():
             check_embedding_ctx_length=False,
         )
 
+    if provider == "local":
+        from FlagEmbedding import BGEM3FlagModel
+        model_name = _env("LOCAL_EMBEDDING_MODEL", "BAAI/bge-m3") or "BAAI/bge-m3"
+        device = _env("LOCAL_EMBEDDING_DEVICE", "cpu") or "cpu"
+        use_fp16 = (device == "cuda")
+        model = BGEM3FlagModel(model_name, use_fp16=use_fp16, device=device)
+
+        class LocalEmbeddings:
+            """包装 BGEM3FlagModel 为 OpenAI-兼容的 embedding 接口（与 embed.py 一致）"""
+            def embed_query(self, text: str) -> list:
+                result = model.encode(text, max_length=512)
+                return result['dense_vecs'].tolist()
+
+            def embed_documents(self, texts: list) -> list:
+                result = model.encode(texts, max_length=512)
+                return result['dense_vecs'].tolist()
+
+        return LocalEmbeddings()
+
     raise ValueError(
         f"Unsupported EMBEDDING_PROVIDER={provider!r}. "
-        "Use azure, qwen, zhipu, openai, or openai-compatible."
+        "Use azure, qwen, zhipu, openai, openai-compatible, or volcengine."
     )

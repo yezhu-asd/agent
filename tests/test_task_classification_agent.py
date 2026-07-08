@@ -210,7 +210,7 @@ class TestTaskClassificationAgentEdgeCases:
         
         ambiguous_inputs = [
             "按摩",  # 单词，可能是预约也可能是咨询
-            "技师",  # 可能是查询技师信息
+            "医生",  # 可能是查询医生信息
             "服务",  # 很模糊
             "帮助",  # 很泛泛
         ]

@@ -3,75 +3,83 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 
 
-class BaseTechnicianRepository(ABC):
+class BaseDoctorRepository(ABC):
     """
-    技师数据访问抽象接口
+    医生数据访问抽象接口（替代 BaseTechnicianRepository）
     
-    定义技师相关的所有数据操作方法
+    定义医生相关的所有数据操作方法
     """
     
     @abstractmethod
-    def add_technician(self, name: str, gender: Optional[str] = None, strength: Optional[str] = None) -> int:
-        """添加技师"""
+    def add_doctor(self, name: str, specialty: str, license_number: str, 
+                   gender: Optional[str] = None, education: Optional[str] = None, 
+                   years_of_experience: int = 0) -> int:
+        """添加医生"""
         pass
 
     @abstractmethod
-    def get_technician_by_id(self, technician_id: int) -> Optional[Dict[str, Any]]:
-        """根据ID获取技师信息"""
+    def get_doctor_by_id(self, doctor_id: int) -> Optional[Dict[str, Any]]:
+        """根据ID获取医生信息"""
         pass
 
     @abstractmethod
-    def get_technician_by_name(self, name: str) -> Optional[Dict[str, Any]]:
-        """根据姓名获取技师信息"""
+    def get_doctor_by_name(self, name: str) -> Optional[Dict[str, Any]]:
+        """根据姓名获取医生信息"""
         pass
 
     @abstractmethod
-    def get_all_technicians(self) -> List[Dict[str, Any]]:
-        """获取所有技师"""
+    def get_all_doctors(self) -> List[Dict[str, Any]]:
+        """获取所有医生"""
         pass
 
     @abstractmethod
-    def get_all_strengths(self) -> List[str]:
-        """获取所有技师的专长"""
+    def get_doctors_by_specialty(self, specialty: str) -> List[Dict[str, Any]]:
+        """根据专科获取医生"""
         pass
 
     @abstractmethod
-    def update_technician(self, technician_id: int, **updates) -> bool:
-        """更新技师信息"""
+    def get_top_rated_doctors(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """获取评分最高的医生"""
         pass
 
     @abstractmethod
-    def delete_technician(self, technician_id: int) -> bool:
-        """删除技师"""
+    def update_doctor(self, doctor_id: int, **updates) -> bool:
+        """更新医生信息"""
         pass
 
     @abstractmethod
-    def get_technicians_by_gender(self, gender: str) -> List[Dict[str, Any]]:
-        """根据性别获取技师"""
+    def delete_doctor(self, doctor_id: int) -> bool:
+        """删除医生"""
+        pass
+
+    @abstractmethod
+    def update_doctor_rating(self, doctor_id: int, rating: float) -> bool:
+        """更新医生评分"""
         pass
 
 
 class BaseScheduleRepository(ABC):
     """
-    排班数据访问抽象接口
+    医生值班表数据访问抽象接口
     
     定义排班相关的所有数据操作方法
     """
     
     @abstractmethod
-    def add_schedule(self, technician_id: int, start_time: datetime, end_time: datetime, 
-                    status: str, appointment_id: Optional[int] = None) -> int:
+    def add_schedule(self, doctor_id: int, start_time: datetime, end_time: datetime, 
+                    status: str, shift_type: Optional[str] = None, 
+                    appointment_id: Optional[int] = None) -> int:
         """添加排班"""
         pass
 
     @abstractmethod
-    def get_technician_schedules(self, technician_id: int, date: datetime) -> List[Dict[str, Any]]:
-        """获取技师指定日期的排班"""
+    def get_doctor_schedules(self, doctor_id: int, date: datetime) -> List[Dict[str, Any]]:
+        """获取医生指定日期的排班"""
         pass
 
     @abstractmethod
-    def is_technician_available(self, technician_id: int, start_time: datetime, end_time: datetime) -> bool:
-        """检查技师时间段是否可用"""
+    def is_doctor_available(self, doctor_id: int, start_time: datetime, end_time: datetime) -> bool:
+        """检查医生时间段是否可用"""
         pass
 
     @abstractmethod
@@ -80,9 +88,18 @@ class BaseScheduleRepository(ABC):
         pass
 
     @abstractmethod
+    def get_available_doctors_at_time(self, start_time: datetime, end_time: datetime) -> List[Dict[str, Any]]:
+        """获取指定时间段可用的医生列表"""
+        pass
+
+    @abstractmethod
     def delete_schedule(self, schedule_id: int) -> bool:
         """删除排班"""
         pass
+
+
+# 向后兼容别名
+BaseTechnicianRepository = BaseDoctorRepository
 
 
 class BaseKnowledgeRepository(ABC):
@@ -142,21 +159,21 @@ class BaseKnowledgeRepository(ABC):
 
 class BaseUserBehaviorRepository(ABC):
     """
-    用户行为数据访问抽象接口
+    健康追踪数据访问抽象接口
     
-    定义用户行为分析相关的所有数据操作方法
+    定义问诊记录、偏好和建议相关的数据操作方法
     """
     
     @abstractmethod
     def record_behavior(self, user_id: str, action_type: str, action_data: Optional[Dict[str, Any]] = None, 
                        technician_id: Optional[int] = None, session_id: Optional[str] = None) -> int:
-        """记录用户行为"""
+        """记录追踪数据"""
         pass
 
     @abstractmethod
     def get_user_behaviors(self, user_id: str, action_type: Optional[str] = None, 
                           days_back: Optional[int] = None) -> List[Dict[str, Any]]:
-        """获取用户行为历史"""
+        """获取追踪历史"""
         pass
 
     @abstractmethod

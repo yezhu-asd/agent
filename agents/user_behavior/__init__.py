@@ -1,10 +1,10 @@
 """
-UserBehavior Module
+健康追踪模块
 
-提供用户行为分析相关的核心组件（简化版）：
-- BehaviorRecorder: 行为记录器 - 记录用户操作行为
-- PatternAnalyzer: 模式分析器 - 分析用户行为模式和生成回访提醒
-- PreferenceManager: 偏好管理器 - 管理用户偏好数据
+提供健康追踪相关的核心组件（简化版）：
+- BehaviorRecorder: 记录器 - 记录追踪数据
+- PatternAnalyzer: 模式分析器 - 分析健康追踪数据和生成随访提醒
+- PreferenceManager: 偏好管理器 - 管理健康偏好数据
 """
 
 from .behavior_recorder import BehaviorRecorder

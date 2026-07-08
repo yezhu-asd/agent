@@ -20,7 +20,7 @@ class TestAppointmentAgentCoreFeatures:
         """
         测试：预约代理应该能从自然语言中提取预约信息
         
-        用户说："我想预约明天下午2点的按摩，女技师"
+        用户说："我想预约明天下午2点的按摩，女医生"
         应该提取到：
         - 时间: 明天下午2点 
         - 项目: 按摩  
@@ -31,7 +31,7 @@ class TestAppointmentAgentCoreFeatures:
         """
         agent = AppointmentAgent()
         
-        user_input = "我想预约明天下午2点的按摩，女技师"
+        user_input = "我想预约明天下午2点的按摩，女医生"
         
         # 使用真实的解析流程：通过LLM处理用户输入
         from langchain_core.chat_history import InMemoryChatMessageHistory
@@ -47,7 +47,7 @@ class TestAppointmentAgentCoreFeatures:
         
         # 验证解析结果包含预期信息
         assert result["project"] == "按摩", f"应该提取到按摩项目，但得到：{result['project']}"
-        assert result["gender"] == "女", f"应该提取到女技师偏好，但得到：{result['gender']}"
+        assert result["gender"] == "女", f"应该提取到女医生偏好，但得到：{result['gender']}"
         
         # 验证时间信息（明天下午2点应该被转换为标准格式）
         start_time = result["start_time"]
@@ -64,7 +64,7 @@ class TestAppointmentAgentCoreFeatures:
         用户分步骤提供信息：
         1. "我要预约按摩" -> 应该记录项目=按摩，其他为空
         2. "明天下午2点" -> 应该记录时间，保持项目=按摩
-        3. "女技师" -> 应该记录性别偏好，保持之前信息
+        3. "女医生" -> 应该记录性别偏好，保持之前信息
         """
         agent = AppointmentAgent()
         

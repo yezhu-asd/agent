@@ -1,35 +1,44 @@
 from .base import SessionManager
-from .repositories import TechnicianRepository, KnowledgeRepository, UserBehaviorRepository
+from .repositories import TechnicianRepository, KnowledgeRepository, UserBehaviorRepository, ConsultationRepository
 from typing import Optional
+
+from config.settings import settings
 
 
 class DatabaseRouter:
     """
     数据库路由器
-    
+
     职责：
-    1. 管理数据库连接和会话
+    1. 管理数据库连接和会话（MySQL / SQLite）
     2. 提供统一的数据访问入口
     3. 协调各个Repository的操作
     """
-    
-    def __init__(self, db_path: str = 'sqlite:///data/smart_appointment.db'):
+
+    def __init__(self, db_url: str | None = None):
         """
         初始化数据库路由器
-        
+
         Args:
-            db_path: 数据库连接路径
+            db_url: 数据库连接 URL，默认使用 settings.DATABASE_URL
         """
-        self.session_manager = SessionManager(db_path)
-        
+        db_url = db_url or settings.DATABASE_URL
+        self.session_manager = SessionManager(db_url)
+
         # 初始化各个Repository
         self.technician_repo = TechnicianRepository(self.session_manager)
         self.knowledge_repo = KnowledgeRepository(self.session_manager)
         self.user_behavior_repo = UserBehaviorRepository(self.session_manager)
+        self.consultation_repo = ConsultationRepository(self.session_manager)
 
     @property
     def technicians(self) -> TechnicianRepository:
-        """获取技师数据仓库"""
+        """获取医生数据仓库"""
+        return self.technician_repo
+
+    @property
+    def doctors(self) -> TechnicianRepository:
+        """获取医生数据仓库（technicians 的别名）"""
         return self.technician_repo
 
     @property
@@ -42,6 +51,11 @@ class DatabaseRouter:
         """获取用户行为数据仓库"""
         return self.user_behavior_repo
 
+    @property
+    def consultations(self) -> ConsultationRepository:
+        """获取问诊记录数据仓库"""
+        return self.consultation_repo
+
     def close(self):
         """关闭数据库连接"""
         self.session_manager.close()
@@ -50,52 +64,93 @@ class DatabaseRouter:
 # 为了兼容性，保留原有的类名
 class TechnicianDBRouter:
     """
-    技师数据库路由器（兼容性类）
-    
+    医生数据库路由器（兼容性类）
+
     为保持向后兼容，继续支持原有的接口
     """
-    
+
     def __init__(self, db_type='local', **kwargs):
         self.db_router = DatabaseRouter(**kwargs)
-        self.technician_repo = self.db_router.technicians
+        self.doctor_repo = self.db_router.technicians
 
-    # 技师相关方法
-    def add_technician(self, name, gender=None, strength=None) -> None:
-        return self.technician_repo.add_technician(name, gender, strength)
+    # 医生相关方法
+    def add_doctor(self, name, gender=None, strength=None) -> None:
+        return self.doctor_repo.add_technician(name, gender, strength)
 
-    def get_technician_by_name(self, name: str):
-        return self.technician_repo.get_technician_by_name(name)
+    def get_doctor_by_name(self, name: str):
+        return self.doctor_repo.get_technician_by_name(name)
 
-    def get_technician_by_id(self, technician_id: int):
-        return self.technician_repo.get_technician_by_id(technician_id)
+    def get_doctor_by_id(self, doctor_id: int):
+        return self.doctor_repo.get_technician_by_id(doctor_id)
 
-    def get_all_technicians(self):
-        return self.technician_repo.get_all_technicians()
+    def get_all_doctors(self):
+        return self.doctor_repo.get_all_technicians()
 
     def get_all_strengths(self):
-        return self.technician_repo.get_all_strengths()
+        return self.doctor_repo.get_all_strengths()
 
     # 排班相关方法
-    def add_schedule(self, technician_id: int, start_time, end_time, status, appointment_id=None) -> None:
-        return self.technician_repo.add_schedule(technician_id, start_time, end_time, status, appointment_id)
+    def add_schedule(self, doctor_id: int, start_time, end_time, status, appointment_id=None) -> None:
+        return self.doctor_repo.add_schedule(doctor_id, start_time, end_time, status, appointment_id)
 
-    def get_technician_schedules(self, technician_id: int, date):
-        return self.technician_repo.get_technician_schedules(technician_id, date)
+    def get_doctor_schedules(self, doctor_id: int, date):
+        return self.doctor_repo.get_technician_schedules(doctor_id, date)
 
-    def is_technician_available(self, technician_id: int, start_time, end_time) -> bool:
-        return self.technician_repo.is_technician_available(technician_id, start_time, end_time)
+    def is_doctor_available(self, doctor_id: int, start_time, end_time) -> bool:
+        return self.doctor_repo.is_technician_available(doctor_id, start_time, end_time)
 
-    def get_technicians_by_gender(self, gender: str):
-        return self.technician_repo.get_technicians_by_gender(gender)
+    def get_doctors_by_gender(self, gender: str):
+        return self.doctor_repo.get_technicians_by_gender(gender)
+
+
+class DoctorDBRouter:
+    """
+    医生数据库路由器（新的命名）
+
+    保留与 TechnicianDBRouter 相同的接口以便平滑迁移，代码应逐步切换到使用 DoctorDBRouter。
+    """
+
+    def __init__(self, db_type='local', **kwargs):
+        self.db_router = DatabaseRouter(**kwargs)
+        self.doctor_repo = self.db_router.technicians
+
+    # 医生相关方法（与旧的接口一一对应）
+    def add_doctor(self, name, gender=None, strength=None) -> None:
+        return self.doctor_repo.add_technician(name, gender, strength)
+
+    def get_doctor_by_name(self, name: str):
+        return self.doctor_repo.get_technician_by_name(name)
+
+    def get_doctor_by_id(self, doctor_id: int):
+        return self.doctor_repo.get_technician_by_id(doctor_id)
+
+    def get_all_doctors(self):
+        return self.doctor_repo.get_all_technicians()
+
+    def get_all_strengths(self):
+        return self.doctor_repo.get_all_strengths()
+
+    # 排班相关方法
+    def add_schedule(self, doctor_id: int, start_time, end_time, status, appointment_id=None) -> None:
+        return self.doctor_repo.add_schedule(doctor_id, start_time, end_time, status, appointment_id)
+
+    def get_doctor_schedules(self, doctor_id: int, date):
+        return self.doctor_repo.get_technician_schedules(doctor_id, date)
+
+    def is_doctor_available(self, doctor_id: int, start_time, end_time) -> bool:
+        return self.doctor_repo.is_technician_available(doctor_id, start_time, end_time)
+
+    def get_doctors_by_gender(self, gender: str):
+        return self.doctor_repo.get_technicians_by_gender(gender)
 
 
 class KnowledgeDBRouter:
     """
     知识库数据库路由器（兼容性类）
-    
+
     为保持向后兼容，继续支持原有的接口
     """
-    
+
     def __init__(self, db_type='local', **kwargs):
         self.db_router = DatabaseRouter(**kwargs)
         self.knowledge_repo = self.db_router.knowledge
@@ -131,10 +186,10 @@ class KnowledgeDBRouter:
 class UserBehaviorDBRouter:
     """
     用户行为数据库路由器（兼容性类）
-    
+
     为保持向后兼容，继续支持原有的接口
     """
-    
+
     def __init__(self, db_type='local', **kwargs):
         self.db_router = DatabaseRouter(**kwargs)
         self.user_behavior_repo = self.db_router.user_behavior

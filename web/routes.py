@@ -3,12 +3,14 @@ Web界面路由
 
 处理前端页面渲染和聊天功能
 """
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi import APIRouter, Request, Header, HTTPException
+from fastapi.responses import HTMLResponse, StreamingResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from api.chat_handler import ProcessUserInput_stream
+from services.auth_service import auth_service
 import logging
+from typing import Optional
 
 # 创建logger实例
 logger = logging.getLogger(__name__)
@@ -22,31 +24,81 @@ class ChatRequest(BaseModel):
     message: str
     state: str | None = None
 
+@router.get("/login", response_class=HTMLResponse, summary="登录页面")
+async def login_page(request: Request):
+    """渲染登录页面"""
+    return templates.TemplateResponse("login.html", {"request": request})
+
 @router.get("/", response_class=HTMLResponse, summary="主页")
 async def read_root(request: Request):
     """渲染主页聊天界面"""
     return templates.TemplateResponse("index.html", {"request": request})
 
 @router.post("/chat/stream", summary="流式聊天")
-async def chat_stream_endpoint(chat: ChatRequest):
+async def chat_stream_endpoint(chat: ChatRequest, authorization: Optional[str] = Header(default=None)):
     """处理流式聊天请求"""
+    # 验证并提取 token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="未登录或 Token 格式错误")
+
+    token = authorization[7:]  # 移除 "Bearer " 前缀
+    session = auth_service.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="未登录或 Token 已失效")
+
     async def token_generator():
-        async for token in ProcessUserInput_stream(chat.message):
-            yield token
+        try:
+            async for token_chunk in ProcessUserInput_stream(
+                chat.message,
+                token=token,
+                state=chat.state,
+                user_id=session.get('phone'),  # 用手机号作为 user_id
+                conversation_id=session.get('conversation_id'),
+                user_info={
+                    'phone': session.get('phone'),
+                    'user_name': session.get('user_name'),
+                    'role': session.get('role'),
+                    'created_at': session.get('created_at')
+                }
+            ):
+                yield token_chunk
+        except Exception as exc:
+            logger.exception("流式聊天处理失败")
+            yield f"[ERROR] {str(exc)}"
     return StreamingResponse(token_generator(), media_type="text/plain")
 
 @router.post("/chat", summary="兼容性聊天接口")
-async def chat_endpoint(chat: ChatRequest):
+async def chat_endpoint(chat: ChatRequest, authorization: Optional[str] = Header(default=None)):
     """兼容性聊天接口，建议使用/chat/stream"""
-    async def token_generator():
-        async for token in ProcessUserInput_stream(chat.message):
-            yield token
-    return StreamingResponse(token_generator(), media_type="text/plain")
+    # 验证并提取 token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="未登录或 Token 格式错误")
 
-@router.get("/user_behavior", response_class=HTMLResponse, summary="用户行为分析页面")
-async def user_behavior_page(request: Request):
-    """用户行为分析页面"""
-    return templates.TemplateResponse("user_behavior_analysis.html", {"request": request})
+    token = authorization[7:]  # 移除 "Bearer " 前缀
+    session = auth_service.get_session(token)
+    if not session:
+        raise HTTPException(status_code=401, detail="未登录或 Token 已失效")
+
+    async def token_generator():
+        try:
+            async for token_chunk in ProcessUserInput_stream(
+                chat.message,
+                token=token,
+                state=chat.state,
+                user_id=session.get('phone'),
+                conversation_id=session.get('conversation_id'),
+                user_info={
+                    'phone': session.get('phone'),
+                    'user_name': session.get('user_name'),
+                    'role': session.get('role'),
+                    'created_at': session.get('created_at')
+                }
+            ):
+                yield token_chunk
+        except Exception as exc:
+            logger.exception("兼容聊天接口流式处理失败")
+            yield f"[ERROR] {str(exc)}"
+    return StreamingResponse(token_generator(), media_type="text/plain")
 
 @router.get("/knowledge", response_class=HTMLResponse, summary="知识库管理页面")
 async def knowledge_page(request: Request):
@@ -73,10 +125,10 @@ async def knowledge_page(request: Request):
             "error": str(e)
         })
 
-@router.get("/technician", response_class=HTMLResponse, summary="技师状态页面")
+@router.get("/technician", response_class=HTMLResponse, summary="医生状态页面")
 async def technician_page(request: Request):
-    """技师状态页面"""
-    # 通过API层获取技师数据
+    """医生状态页面"""
+    # 通过API层获取医生数据
     try:
         from api.technician import get_all_technicians
         
@@ -85,18 +137,18 @@ async def technician_page(request: Request):
         
         return templates.TemplateResponse("technician.html", {
             "request": request,
-            "technicians": technicians
+            "doctors": technicians
         })
     except Exception as e:
         return templates.TemplateResponse("technician.html", {
             "request": request,
-            "technicians": [],
+            "doctors": [],
             "error": str(e)
         })
 
-@router.get("/technician_schedule", response_class=HTMLResponse, summary="技师排班页面")
+@router.get("/technician_schedule", response_class=HTMLResponse, summary="医生值班页面")
 async def technician_schedule_page(request: Request):
-    """技师排班页面"""
+    """医生值班页面"""
     try:
         from api.technician import get_all_technicians_schedule_today
         from config.time_config import time_config
@@ -104,16 +156,16 @@ async def technician_schedule_page(request: Request):
         # 获取当前日期
         current_date = time_config.current_date_str()
         
-        # 通过API层获取所有技师的排班数据
+        # 通过API层获取所有医生的值班数据
         schedules_data = await get_all_technicians_schedule_today()
         
         # 构建排班数据格式 - 直接使用API返回的数据
         schedule = []
         for schedule_item in schedules_data:
             schedule.append({
-                "id": schedule_item["technician_id"],
-                "name": schedule_item["technician_name"],
-                "busy_periods": schedule_item["busy_periods"]
+                "id": schedule_item.get("doctor_id", schedule_item.get("technician_id")),
+                "name": schedule_item.get("doctor_name", schedule_item.get("technician_name")),
+                "busy_periods": schedule_item.get("busy_periods", [])
             })
         
         return templates.TemplateResponse("technician_schedule.html", {
@@ -122,17 +174,12 @@ async def technician_schedule_page(request: Request):
             "current_date": current_date
         })
     except Exception as e:
-        logger.error(f"加载技师排班数据失败: {str(e)}")
+        logger.error(f"加载医生排班数据失败: {str(e)}")
         return templates.TemplateResponse("technician_schedule.html", {
             "request": request,
             "schedule": [],
             "error": str(e)
         })
-
-@router.get("/user_behavior_analysis", response_class=HTMLResponse, summary="用户行为分析页面")
-async def user_behavior_analysis_page(request: Request):
-    """用户行为分析页面"""
-    return templates.TemplateResponse("user_behavior_analysis.html", {"request": request})
 
 @router.get("/admin", response_class=HTMLResponse, summary="系统管理页面")
 async def admin_dashboard(request: Request):
@@ -147,27 +194,27 @@ async def admin_dashboard(request: Request):
         knowledge_count = knowledge_data.get("total_count", 0)
         categories = knowledge_data.get("categories", [])
         
-        # 获取技师数据
-        technicians = await get_all_technicians()
-        
+        # 获取医生数据
+        doctors = await get_all_technicians()
+
         # 数据库信息
         db_info = {
             "knowledge_count": knowledge_count,
             "categories_count": len(categories),
-            "technicians_count": len(technicians),
+            "doctors_count": len(doctors),
             "categories": categories
         }
-        
+
         return templates.TemplateResponse("admin_dashboard.html", {
             "request": request,
             "db_info": db_info,
-            "technicians": technicians[:5]  # 只显示前5个技师
+            "doctors": doctors[:5]  # 只显示前5个医生
         })
     except Exception as e:
         return templates.TemplateResponse("admin_dashboard.html", {
             "request": request,
             "db_info": {},
-            "technicians": [],
+            "doctors": [],
             "error": str(e)
         })
 
@@ -182,13 +229,13 @@ async def database_admin_page(request: Request):
         # 获取知识库数据
         knowledge_data = await get_all_knowledge()
         
-        # 获取技师数据
-        technicians = await get_all_technicians()
-        
+        # 获取医生数据
+        doctors_data = await get_all_technicians()
+
         stats = {
             "knowledge_documents": knowledge_data.get("total_count", 0),
             "categories": len(knowledge_data.get("categories", [])),
-            "technicians": len(technicians),
+            "doctors": len(doctors_data),
             "appointments": 0  # TODO: 通过API获取预约数量
         }
         

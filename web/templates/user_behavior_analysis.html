@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>用户行为分析 - 智能预约系统</title>
+    <title>问诊行为分析 - 校园医务室系统</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -288,8 +288,8 @@
             <!-- 用户分析数据 -->
             <div class="stats-grid" id="analysisData">
                 <div class="stat-card">
-                    <div class="stat-title">最喜欢的技师</div>
-                    <div id="favoriteTechnician" class="stat-value primary">正在加载...</div>
+                    <div class="stat-title">最喜欢的医生</div>
+                    <div id="favoriteDoctor" class="stat-value primary">正在加载...</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">常用服务项目</div>
@@ -384,7 +384,7 @@
                 document.getElementById('debug-info').textContent = `调试：API成功返回，共${data.total_appointments}次预约`;
                 
                 const elements = {
-                    'favoriteTechnician': data.favorite_technician_name || '无',
+                    'favoriteDoctor': data.favorite_doctor_name || '无',
                     'favoriteService': data.favorite_service || '无', 
                     'favoriteDuration': data.favorite_duration ? `${data.favorite_duration}分钟` : '无',
                     'daysSinceLastAppointment': data.days_since_last_appointment !== null ? `${data.days_since_last_appointment}天` : '无',
@@ -418,7 +418,7 @@
                 document.getElementById('debug-info').textContent = `调试：API调用失败 - ${error.message}`;
                 
                 // 显示错误信息
-                const elements = ['favoriteTechnician', 'favoriteService', 'favoriteDuration', 'daysSinceLastAppointment'];
+                const elements = ['favoriteDoctor', 'favoriteService', 'favoriteDuration', 'daysSinceLastAppointment'];
                 elements.forEach(id => {
                     const element = document.getElementById(id);
                     if (element) {
@@ -463,10 +463,10 @@
                 
                 messageContent.textContent = data.message || '提醒消息生成成功！';
                 
-                if (data.technician_available_times && data.technician_available_times.length > 0) {
+                if (data.doctor_available_times && data.doctor_available_times.length > 0) {
                     availableTimes.innerHTML = `
                         <strong>建议预约时间：</strong><br>
-                        ${data.technician_available_times.map(time => `<span style="background: #f093fb; color: white; padding: 4px 8px; border-radius: 8px; margin: 2px; display: inline-block;">${time}</span>`).join('')}
+                        ${data.doctor_available_times.map(time => `<span style="background: #f093fb; color: white; padding: 4px 8px; border-radius: 8px; margin: 2px; display: inline-block;">${time}</span>`).join('')}
                     `;
                 } else {
                     availableTimes.innerHTML = '';

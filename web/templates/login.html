@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>校园医务室 - 登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            padding: 40px 30px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="tel"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="tel"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+        }
+
+        button {
+            padding: 12px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-get-code {
+            background: #f0f0f0;
+            color: #667eea;
+            min-width: 120px;
+            white-space: nowrap;
+        }
+
+        .btn-get-code:hover:not(:disabled) {
+            background: #e0e0e0;
+        }
+
+        .btn-get-code:disabled {
+            background: #ddd;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .btn-login:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .user-info {
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .user-info input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .status {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+            font-size: 14px;
+        }
+
+        .status.error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+            display: block;
+        }
+
+        .status.success {
+            background: #efe;
+            color: #3c3;
+            border: 1px solid #cfc;
+            display: block;
+        }
+
+        .status.info {
+            background: #eef;
+            color: #33c;
+            border: 1px solid #ccf;
+            display: block;
+        }
+
+        .countdown {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .phone-tips {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>校园医务室</h1>
+            <p>智能问诊预约助手</p>
+        </div>
+
+        <form id="loginForm">
+            <!-- 手机号 -->
+            <div class="form-group">
+                <label for="phone">手机号码 <span style="color: red;">*</span></label>
+                <input 
+                    type="tel" 
+                    id="phone" 
+                    name="phone"
+                    placeholder="请输入手机号码"
+                    pattern="^1\d{10}$"
+                    required
+                >
+                <div class="phone-tips">格式：1+10位数字，如 13800138000</div>
+            </div>
+
+            <!-- 验证码 -->
+            <div class="form-group">
+                <label for="code">验证码 <span style="color: red;">*</span></label>
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="code" 
+                        name="code"
+                        placeholder="请输入验证码"
+                        maxlength="6"
+                        required
+                    >
+                    <button 
+                        type="button" 
+                        class="btn-get-code" 
+                        id="getCodeBtn"
+                        onclick="getVerificationCode()"
+                    >
+                        获取验证码
+                    </button>
+                </div>
+                <div class="countdown" id="countdown"></div>
+            </div>
+
+            <!-- 用户信息 -->
+            <div class="form-group">
+                <label>用户信息</label>
+                <div class="user-info">
+                    <input 
+                        type="text" 
+                        id="userName" 
+                        placeholder="姓名（可选）"
+                    >
+                    <select id="role" style="padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px;">
+                        <option value="student">学生</option>
+                        <option value="staff">教职工</option>
+                        <option value="visitor">访客</option>
+                    </select>
+                </div>
+                <input 
+                    type="text" 
+                    id="department" 
+                    placeholder="学院/部门（可选）"
+                    style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; margin-top: 10px;"
+                >
+            </div>
+
+            <!-- 状态信息 -->
+            <div id="status" class="status"></div>
+
+            <!-- 登录按钮 -->
+            <button type="submit" class="btn-login" id="loginBtn">登 录</button>
+        </form>
+    </div>
+
+    <script>
+        let codeCountdown = 0;
+        let sessionToken = null;
+
+        // 获取验证码
+        async function getVerificationCode() {
+            const phone = document.getElementById('phone').value;
+            const btn = document.getElementById('getCodeBtn');
+            const status = document.getElementById('status');
+
+            // 验证手机号格式
+            if (!isValidPhone(phone)) {
+                showStatus('请输入正确的手机号码（1开头的11位数字）', 'error');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                showStatus('正在发送验证码...', 'info');
+
+                const response = await fetch('/api/auth/code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || '获取验证码失败');
+                }
+
+                showStatus('验证码已发送到您的手机', 'success');
+                showStatus(`演示验证码: ${data.data.code}（仅本演示环境显示）`, 'info');
+                
+                // 显示倒计时
+                codeCountdown = 60;
+                updateCountdown();
+
+            } catch (error) {
+                showStatus(error.message || '获取验证码失败，请稍后重试', 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // 更新倒计时
+        function updateCountdown() {
+            const btn = document.getElementById('getCodeBtn');
+            const countdown = document.getElementById('countdown');
+
+            if (codeCountdown > 0) {
+                countdown.textContent = `${codeCountdown}秒后重新获取`;
+                codeCountdown--;
+                setTimeout(updateCountdown, 1000);
+            } else {
+                btn.disabled = false;
+                countdown.textContent = '';
+            }
+        }
+
+        // 登录
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const phone = document.getElementById('phone').value;
+            const code = document.getElementById('code').value;
+            const userName = document.getElementById('userName').value || '游客';
+            const role = document.getElementById('role').value;
+            const department = document.getElementById('department').value || '未指定';
+            const loginBtn = document.getElementById('loginBtn');
+
+            try {
+                loginBtn.disabled = true;
+                showStatus('正在登录...', 'info');
+
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        phone,
+                        code,
+                        user_name: userName,
+                        role,
+                        grade_or_department: department
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || '登录失败');
+                }
+
+                // 保存 token
+                sessionToken = data.data.token;
+                localStorage.setItem('token', sessionToken);
+                localStorage.setItem('conversation_id', data.data.conversation_id);
+                localStorage.setItem('user_info', JSON.stringify({
+                    phone: data.data.phone,
+                    user_name: data.data.user_name,
+                    role: data.data.role,
+                    conversation_id: data.data.conversation_id
+                }));
+
+                showStatus('登录成功，正在跳转...', 'success');
+
+                // 延迟跳转，让用户看到成功提示
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+
+            } catch (error) {
+                showStatus(error.message || '登录失败，请检查验证码', 'error');
+                loginBtn.disabled = false;
+            }
+        });
+
+        // 验证手机号格式
+        function isValidPhone(phone) {
+            return /^1\d{10}$/.test(phone);
+        }
+
+        // 显示状态信息
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+        }
+
+        // 页面加载完成后，检查是否已登录
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // 已登录，重定向到主页
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html>

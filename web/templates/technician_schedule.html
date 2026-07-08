@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>技师排班管理</title>
+    <title>医生值班管理</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -146,14 +146,14 @@
             padding-right: 20px;
         }
         
-        .tech-name {
+        .doctor-name {
             font-size: 16px;
             font-weight: 600;
             color: #333;
             margin-bottom: 5px;
         }
         
-        .tech-id {
+        .doctor-id {
             font-size: 12px;
             color: #888;
             background: rgba(79, 172, 254, 0.1);
@@ -291,9 +291,9 @@
         <div class="header">
             <h2>
                 <i class="fas fa-calendar-alt"></i>
-                技师排班管理
+                医生值班管理
             </h2>
-            <p>实时查看技师工作时间安排和预约状态</p>
+            <p>实时查看医生工作时间安排和预约状态</p>
         </div>
         
         <div class="content">
@@ -321,11 +321,11 @@
             
             <div class="timeline-container">
                 {% if schedule and schedule|length > 0 %}
-                    {% for tech in schedule %}
+                    {% for doctor in schedule %}
                     <div class="timeline-row">
                         <div class="info">
-                            <div class="tech-name">{{ tech.name }}</div>
-                            <div class="tech-id">ID: {{ tech.id }}</div>
+                            <div class="doctor-name">{{ doctor.name }}</div>
+                            <div class="doctor-id">ID: {{ doctor.id }}</div>
                         </div>
                         <div class="timeline">
                             <!-- 时间刻度标记 -->
@@ -335,9 +335,9 @@
                                     <div class="time-marker" style="left: {{ left }}%;"></div>
                                 {% endfor %}
                             </div>
-                            
+
                             <!-- 预约时间段 -->
-                            {% for period in tech.busy_periods %}
+                            {% for period in doctor.busy_periods %}
                             {% set start = period.start.split(':') %}
                             {% set end = period.end.split(':') %}
                             {% set start_minutes = (start[0]|int) * 60 + (start[1]|int) %}
@@ -358,7 +358,7 @@
                     <div class="empty-state">
                         <i class="fas fa-calendar-check"></i>
                         <h3>暂无排班信息</h3>
-                        <p>当前没有技师排班数据</p>
+                        <p>当前没有医生排班数据</p>
                     </div>
                 {% endif %}
             </div>
