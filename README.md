@@ -165,22 +165,22 @@ docker-compose -f docker-compose.milvus.yml stop
 docker-compose -f docker-compose.milvus.yml down -v
 rm -rf milvus_data/
 ```
-# 重启 重启 Milvus 只用 docker-compose down（不带 -v），否则数据会被清空
+# 重启Milvus 只用 docker-compose down（不带 -v），否则数据会被清空
 cd milvus
 docker-compose -f docker-compose.milvus.yml down 
 docker-compose -f docker-compose.milvus.yml up -d
 
 #### 详细文档：[milvus/MILVUS_DEPLOYMENT.md](milvus/MILVUS_DEPLOYMENT.md)
 
-## 8. 启动与访问
+## 7. 启动与访问
 
-### 8.1 启动服务
+### 7.1 启动服务
 
 ```powershell
 python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 ```
 
-### 8.2 访问地址
+### 7.2 访问地址
 
 - Web 首页：http://127.0.0.1:8001/
 - 登录页：http://127.0.0.1:8001/login
@@ -189,7 +189,7 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 - ReDoc：http://127.0.0.1:8001/redoc
 - Milvus 管理界面：http://localhost:8080
 
-## 9. 认证流程
+## 8. 认证流程
 
 1. `POST /api/auth/code` 获取验证码
 2. `POST /api/auth/login` 换取 Token
@@ -197,7 +197,7 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 4. 调用聊天接口时携带 `Authorization: Bearer <token>`
 5. `POST /api/auth/logout` 退出登录
 
-## 10. 前端页面
+## 9. 前端页面
 
 - [web/templates/login.html](web/templates/login.html)：登录页
 - [web/templates/index.html](web/templates/index.html)：问诊聊天主页
@@ -206,7 +206,7 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 - [web/templates/knowledge_management.html](web/templates/knowledge_management.html)：健康知识管理
 - [web/templates/user_behavior_analysis.html](web/templates/user_behavior_analysis.html)：问诊历史与健康追踪
 
-## 11. 测试
+## 10. 测试
 
 运行全部测试：
 
@@ -220,13 +220,13 @@ python -m pytest -v --tb=short
 python -m pytest tests/test_token_integration.py -v --tb=short
 ```
 
-## 12. 医疗安全约束
+## 11. 医疗安全约束
 
 - 系统只做辅助建议，不做最终医疗诊断。
 - 出现高风险症状应优先提示尽快就医或急救。
 - 不输出“无需预约”等绝对排除性结论。
 
-## 13. 版本说明
+## 12. 版本说明
 
 当前版本：`2.1.0-milvus`
 
@@ -238,9 +238,9 @@ python -m pytest tests/test_token_integration.py -v --tb=short
   - 完成 Token 登录与会话并发隔离
   - 完成前端页面医学化改造（持续优化中）
 
-## 14. 推送到 GitHub
+## 13. 推送到 GitHub
 
-### 14.1 开始前准备
+### 13.1 开始前准备
 
 远程仓库已配置为：
 
@@ -250,7 +250,7 @@ git remote add origin https://github.com/yezhu-asd/agent.git
 
 > 推荐使用 **HTTPS** 协议。SSH 在国内网络环境下经常连接被 reset（端口 22/443 被阻断），HTTPS 配合代理更稳定。
 
-### 14.2 配置代理（必须）
+### 13.2 配置代理（必须）
 
 国内直连 GitHub 不稳定，需要先设置代理。假设你的代理软件本地端口为 `7890`：
 
@@ -272,7 +272,7 @@ git config --global --get https.proxy
 > git config --global --unset https.proxy
 > ```
 
-### 14.3 排除大文件
+### 13.3 排除大文件
 
 以下文件体积巨大，**不应上传到 GitHub**，已在 `.gitignore` 中排除：
 
@@ -288,7 +288,7 @@ pip install git-filter-repo
 git filter-repo --invert --path models/
 ```
 
-### 14.4 日常推送流程
+### 13.4 日常推送流程
 
 ```bash
 # 1. 查看更改
@@ -308,7 +308,7 @@ git push origin main
 - 选择 **「Use a personal access token」**
 - 令牌获取地址：https://github.com/settings/tokens → Generate new token (classic) → 勾选 `repo` 权限
 
-### 14.5 第一次从零推送（完整流程）
+### 13.5 第一次从零推送（完整流程）
 
 ```bash
 # 初始化仓库
@@ -328,7 +328,7 @@ git commit -m "Initial commit"
 git push -u origin main
 ```
 
-### 14.6 常见问题
+### 13.6 常见问题
 
 | 问题 | 原因 | 解决方案 |
 |------|------|----------|
