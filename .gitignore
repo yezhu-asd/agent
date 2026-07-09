@@ -82,3 +82,6 @@ Thumbs.db
 *.pth 
 
 *.onnx
+
+# --- 大文件压缩包（不上传GitHub） ---
+*.7z

@@ -191,23 +191,9 @@ class KnowledgeService:
             raise
 
     async def _init_milvus(self):
-        """Milvus 模式初始化：等待集合加载完毕，跳过种子数据写入（如已有数据）"""
-        # 等待 Milvus 集合完全加载（刚重启时集合可能还在加载，num_entities 为 0）
-        import time
-        max_wait = 120  # 最多等待 120 秒
-        waited = 0
-        while waited < max_wait:
-            stats = await self.milvus.describe_index()
-            count = stats.get("total_vector_count", 0)
-            if count > 0:
-                logger.info(f"Milvus 集合已有 {count} 条向量，跳过种子数据写入")
-                break
-            logger.info(f"Milvus 集合尚未加载完毕（当前 0 条），等待... ({waited}s)")
-            await asyncio.sleep(5)
-            waited += 5
-        else:
-            logger.warning("Milvus 集合等待超时，写入种子数据（如已有数据在加载后会自行恢复）")
-            await self._seed_to_milvus()
+        """Milvus 模式初始化：跳过种子数据写入（用户已手动导入）"""
+        # 直接构建 BM25 索引（从 Milvus 读取）
+        logger.info("[知识库] Milvus 模式：跳过种子数据写入（用户已手动导入）")
         await self._build_bm25_index()
 
     async def _init_pinecone(self):
@@ -787,7 +773,7 @@ class KnowledgeService:
 
     def get_documents_count(self) -> int:
         if self.vector_db_type == "milvus":
-            return getattr(self.milvus, 'collection', None) and self.milvus.collection.num_entities or 0
+            return self.milvus.get_entity_count()
         elif self.vector_db_type == "pinecone":
             return len(self.default_knowledge)  # 近似值
         return self.db.get_documents_count()
