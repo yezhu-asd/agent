@@ -272,21 +272,64 @@ git config --global --get https.proxy
 > git config --global --unset https.proxy
 > ```
 
-### 14.3 排除大文件
+### 14.3 大文件下载与使用说明
 
-以下文件体积巨大，**不应上传到 GitHub**，已在 `.gitignore` 中排除：
+以下文件体积过大，不放在 GitHub，请通过网盘下载后放到项目根目录。
 
-- `*.7z`（`embedding.7z` 4GB、`models.7z` 2.1GB）
-- `bge-m3/`（模型权重 2GB+）
-- `.venv/`、`__pycache__/`
-- `.env`（密钥等敏感信息）
+#### 下载链接
 
-如果之前不小心提交了大文件，需要用 `git filter-repo` 清除历史：
+| 文件 | 大小 | 说明 | 下载链接 |
+|------|------|------|----------|
+| `embedding.7z` | ~4 GB | 医学问答向量数据（约 107 万条），供 Milvus 检索使用 | [百度网盘](https://pan.baidu.com/s/1JUECjh-i_KnvbJnCEEVKcQ?pwd=nxhq) 提取码：`nxhq` |
+| `models.7z` | ~2.1 GB | BGE-M3 嵌入模型权重，供本地离线 embedding 使用 | [百度网盘](https://pan.baidu.com/s/1btG4FcYFbX-rrNVN04z_RQ?pwd=swew) 提取码：`swew` |
+
+#### 下载后操作步骤
+
+下载完成后，分别解压到对应目录：
+
+**① embedding.7z — 向量数据**
+
+解压后应得到 `embedding/embedding_merged/` 目录，里面包含 `.npy` 向量文件。解压完成后启动 Milvus 并上传：
+
+```bash
+# 1. 确保 embedding/embedding_merged/ 目录存在
+
+# 2. 启动 Milvus
+docker-compose -f milvus/docker-compose.milvus.yml up -d
+
+# 3. 等待 30 秒后上传向量数据
+cd embedding
+python upload_embeddings.py
+```
+
+上传完成后即可用于医学知识 RAG 检索。
+
+**② models.7z — BGE-M3 模型权重**
+
+解压后应得到 `models/bge-m3/` 目录。项目中的 embedding 代码会自动检测到该目录并使用本地模型，无需联网下载：
+
+```bash
+# 解压后确认目录结构如下：
+# models/bge-m3/
+# ├── config.json
+# ├── tokenizer.json
+# ├── pytorch_model.bin      (约 2GB)
+# └── ...
+```
+
+> **验证**：运行 `python services/text_embedding.py`，若输出 embedding 向量且无报错，说明模型加载成功。
+
+#### 其他已排除的内容
+
+- `.venv/`、`__pycache__/` — 虚拟环境，本地自动生成
+- `.env` — 密钥等敏感信息，需自行创建（参考 `.env.example`）
+- `bge-m3/` — 模型权重，从 models.7z 解压获得
+
+如果之前不小心提交了大文件到 Git 历史，需要用 `git filter-repo` 清除：
 
 ```bash
 pip install git-filter-repo
 git filter-repo --invert --path models/
-```
 
 ### 14.4 日常推送流程
 
