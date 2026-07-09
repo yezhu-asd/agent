@@ -237,3 +237,102 @@ python -m pytest tests/test_token_integration.py -v --tb=short
   - 完成校园医务室语义迁移
   - 完成 Token 登录与会话并发隔离
   - 完成前端页面医学化改造（持续优化中）
+
+## 14. 推送到 GitHub
+
+### 14.1 开始前准备
+
+远程仓库已配置为：
+
+```bash
+git remote add origin https://github.com/yezhu-asd/agent.git
+```
+
+> 推荐使用 **HTTPS** 协议。SSH 在国内网络环境下经常连接被 reset（端口 22/443 被阻断），HTTPS 配合代理更稳定。
+
+### 14.2 配置代理（必须）
+
+国内直连 GitHub 不稳定，需要先设置代理。假设你的代理软件本地端口为 `7890`：
+
+```bash
+git config --global http.proxy  http://127.0.0.1:7890
+git config --global https.proxy http://127.0.0.1:7890
+```
+
+此配置为 **全局永久生效**，无需每次设置。查看当前代理：
+
+```bash
+git config --global --get http.proxy
+git config --global --get https.proxy
+```
+
+> 如果换了代理端口，重新执行上面两条命令即可更新。想取消代理：
+> ```bash
+> git config --global --unset http.proxy
+> git config --global --unset https.proxy
+> ```
+
+### 14.3 排除大文件
+
+以下文件体积巨大，**不应上传到 GitHub**，已在 `.gitignore` 中排除：
+
+- `*.7z`（`embedding.7z` 4GB、`models.7z` 2.1GB）
+- `bge-m3/`（模型权重 2GB+）
+- `.venv/`、`__pycache__/`
+- `.env`（密钥等敏感信息）
+
+如果之前不小心提交了大文件，需要用 `git filter-repo` 清除历史：
+
+```bash
+pip install git-filter-repo
+git filter-repo --invert --path models/
+```
+
+### 14.4 日常推送流程
+
+```bash
+# 1. 查看更改
+git status
+
+# 2. 添加所有更改
+git add -A
+
+# 3. 提交
+git commit -m "本次更新的简要说明"
+
+# 4. 推送到 GitHub
+git push origin main
+```
+
+第一次推送时会出现登录框：
+- 选择 **「Use a personal access token」**
+- 令牌获取地址：https://github.com/settings/tokens → Generate new token (classic) → 勾选 `repo` 权限
+
+### 14.5 第一次从零推送（完整流程）
+
+```bash
+# 初始化仓库
+git init
+git branch -M main
+
+# 配置远程仓库（HTTPS）
+git remote add origin https://github.com/你的用户名/仓库名.git
+
+# 配置代理
+git config --global http.proxy  http://127.0.0.1:7890
+git config --global https.proxy http://127.0.0.1:7890
+
+# 排除大文件（编辑 .gitignore，然后）
+git add -A
+git commit -m "Initial commit"
+git push -u origin main
+```
+
+### 14.6 常见问题
+
+| 问题 | 原因 | 解决方案 |
+|------|------|----------|
+| `Connection reset` / `Couldn't connect` | 未配置代理，连不上 GitHub | 设置 `http.proxy` 和 `https.proxy` |
+| `HTTP 408` 超时 | 单次推送数据量过大（>100MB） | 用 `git filter-repo` 清除历史大文件 |
+| `Permission denied (publickey)` | SSH 密钥未配置 | 改用 HTTPS，或配置 SSH 密钥 |
+| `remote: Not Found` | GitHub 仓库不存在 | 先在 GitHub 网站上创建仓库 |
