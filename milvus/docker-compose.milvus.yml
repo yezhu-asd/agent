@@ -54,9 +54,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 8G
+          memory: 12G
         reservations:
-          memory: 4G
+          memory: 6G
     volumes:
       - ${MILVUS_DATA_DIR:-./milvus_data}/milvus:/var/lib/milvus
     ports:
