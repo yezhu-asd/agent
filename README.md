@@ -1,4 +1,4 @@
-﻿# Smart Appointment AI Agent (Campus Medical Edition)
+﻿#CampusCare_Agent
 
 本项目是一个面向校园医务室场景的多 Agent 智能问诊预约系统。系统基于 FastAPI + LangChain + RAG 构建，支持 Token 登录、会话隔离、症状问诊、风险识别、医生值班预约与健康知识问答。
 
