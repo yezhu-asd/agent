@@ -10,15 +10,24 @@ langchain-openai>=0.1.0
 langchain-core>=0.1.0
 langchain-community>=0.0.10,<1.0
 faiss-cpu>=1.7.0
-numpy>=1.21.0,<1.24.0
+numpy==1.26.4              # 固定 1.x，否则 faiss/FlagEmbedding 崩溃
 schedule>=1.2.0
 sqlalchemy>=1.4.0
 pymysql>=1.0.0
 redis>=4.0.0
 pinecone-client>=3.0.0
-pymilvus>=2.4.0
+pymilvus>=3.0.0
 protobuf>=5.27.2,<6.0
 requests>=2.25.0
 langchain-experimental>=0.0.10
 pytest>=7.0.0
-FlagEmbedding>=1.2.0
+scikit-learn>=1.4
+
+# ── FlagEmbedding BGE-M3 依赖（已验证可工作，2026-07-14）──
+# GPU 用户：先单独装 torch：pip install torch==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+# CPU 用户：去掉 +cu124，pip 会自动安装 CPU 版
+FlagEmbedding==1.4.0
+torch==2.6.0+cu124          # GPU 版；CPU 用户改为 torch==2.6.0
+transformers==4.57.6
+tokenizers>=0.22.0
+sentencepiece==0.2.2

@@ -1,10 +1,15 @@
 # utils/embedding_matcher.py
 
 import numpy as np
-import faiss
 import os
 import pickle
 from config.model_provider import create_embedding_model
+
+# faiss 仅在 find_best_match_indices 中使用，延迟导入不影响 embed_input
+try:
+    import faiss
+except Exception:
+    faiss = None
 
 
 def find_best_match_indices(text: str, candidates: list) -> list:
@@ -17,6 +22,8 @@ def find_best_match_indices(text: str, candidates: list) -> list:
     """
     if not candidates:
         return []
+    if faiss is None:
+        raise RuntimeError("faiss 未安装，无法使用本地 FAISS 检索。请运行: pip install faiss-cpu")
     candidate_embs = [embed_input(c) for c in candidates]
     candidate_embs = np.array(candidate_embs).astype("float32")
     dimension = candidate_embs.shape[1]

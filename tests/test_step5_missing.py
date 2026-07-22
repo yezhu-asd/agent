@@ -3,7 +3,7 @@ import asyncio
 import sys
 import os
 
-os.chdir(r"E:\wu\xidian\就业\java\agent项目\smart-appointment-ai-agent-master")
+os.chdir(r"E:\wu\xidian\job\java\agent\CampusCare")
 sys.path.insert(0, os.getcwd())
 
 from services.milvus_service import MilvusService

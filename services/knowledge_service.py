@@ -147,7 +147,7 @@ class KnowledgeService:
                 try:
                     from .milvus_service import MilvusService
                     self.milvus = MilvusService()
-                    await self.milvus.initialize(dim=1024)
+                    await self.milvus.initialize(dim=768)
                     if self.milvus.enabled:
                         self.vector_db_type = "milvus"
                         logger.info("[知识库] ✅ 已连接 Milvus 向量数据库")
@@ -191,10 +191,9 @@ class KnowledgeService:
             raise
 
     async def _init_milvus(self):
-        """Milvus 模式初始化：跳过种子数据写入（用户已手动导入）"""
-        # 直接构建 BM25 索引（从 Milvus 读取）
-        logger.info("[知识库] Milvus 模式：跳过种子数据写入（用户已手动导入）")
-        await self._build_bm25_index()
+        """Milvus 模式初始化：跳过种子数据写入和全量 BM25 加载
+           使用 Milvus 内置 INVERTED 索引做全文检索 """
+        logger.info("[知识库] Milvus 模式：跳过全量 BM25 加载，使用 Milvus 内置 INVERTED 全文检索")
 
     async def _init_pinecone(self):
         """Pinecone 模式初始化：检查索引是否为空，空则写入种子数据"""
@@ -524,8 +523,8 @@ class KnowledgeService:
                 # ① 向量检索（广召候选，top_k*10 保证召回）
                 vector_results = await self._search_milvus(query_embedding, top_k=max(top_k * 10, 50), category=category)
 
-                # ② BM25 关键词检索（基于种子数据 / metadata 文本）
-                bm25_results = self._search_bm25(query, top_k=top_k * 3)
+                # ② 全文检索（使用 Milvus 内置 INVERTED 索引 + BM25 评分）
+                bm25_results = await self._fulltext_search_milvus(query, top_k=top_k * 3)
 
                 # ③ RRF 融合两路结果
                 fused = self._rrf_fuse([vector_results, bm25_results], k=60)
@@ -545,7 +544,7 @@ class KnowledgeService:
                         results.append({
                             "id": did,
                             "score": doc["score"],
-                            "content": doc.get("bm25_text", ""),
+                            "content": doc.get("ask", doc.get("answer", doc.get("bm25_text", ""))),
                             "category": "",
                             "keywords": "",
                         })
@@ -574,6 +573,20 @@ class KnowledgeService:
             doc["rank"] = len(results) + 1
             results.append(doc)
         return results
+
+    async def _fulltext_search_milvus(self, query: str, top_k: int = 30) -> List[Dict]:
+        """基于 INVERTED_INDEX + TEXT_MATCH 的中文关键词检索（ask/answer/keywords 字段）"""
+        if not self.milvus or not self.milvus.client:
+            return []
+        try:
+            return await self.milvus.text_match_search(
+                query_text=query,
+                top_k=top_k,
+                fields=["ask", "answer", "keywords"],
+            )
+        except Exception as e:
+            logger.warning(f"[关键词检索] TEXT_MATCH 失败: {e}")
+            return []
 
     async def _search_pinecone(self, query_vec, top_k, category):
         pinecone_filter = {"category": category} if category else None

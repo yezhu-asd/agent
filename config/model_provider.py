@@ -71,20 +71,28 @@ def create_chat_model(temperature: float = 0):
     )
 
 
+_EMBEDDING_CACHE = {}
+
+
 def create_embedding_model():
-    """Create an embedding model from environment configuration."""
+    """Create an embedding model from environment configuration（带缓存，避免每次调用都重新加载）"""
     provider = (_env("EMBEDDING_PROVIDER") or get_model_provider()).strip().lower()
 
+    if provider in _EMBEDDING_CACHE:
+        return _EMBEDDING_CACHE[provider]
+
     if provider == "azure":
-        return AzureOpenAIEmbeddings(
+        instance = AzureOpenAIEmbeddings(
             azure_deployment=_env("AZURE_OPENAI_DEPLOYMENT_EMBEDDING"),
             api_key=SecretStr(_env("AZURE_OPENAI_API_KEY", "") or ""),
             api_version=_env("AZURE_OPENAI_EMBEDDING_VERSION", "2023-05-15"),
             azure_endpoint=_env("AZURE_OPENAI_ENDPOINT_EMBEDDING"),
         )
+        _EMBEDDING_CACHE[provider] = instance
+        return instance
 
     if provider in EMBEDDING_PROVIDERS:
-        return OpenAIEmbeddings(
+        instance = OpenAIEmbeddings(
             model=_env("EMBEDDING_MODEL", "text-embedding-v3") or "text-embedding-v3",
             api_key=SecretStr(_env("EMBEDDING_API_KEY") or _env("LLM_API_KEY", "") or ""),
             base_url=_env("EMBEDDING_BASE_URL") or _env("LLM_BASE_URL"),
@@ -92,6 +100,8 @@ def create_embedding_model():
             # strings; disable token-id batching to send plain text.
             check_embedding_ctx_length=False,
         )
+        _EMBEDDING_CACHE[provider] = instance
+        return instance
 
     if provider == "local":
         from FlagEmbedding import BGEM3FlagModel
@@ -101,7 +111,6 @@ def create_embedding_model():
         model = BGEM3FlagModel(model_name, use_fp16=use_fp16, device=device)
 
         class LocalEmbeddings:
-            """包装 BGEM3FlagModel 为 OpenAI-兼容的 embedding 接口（与 embed.py 一致）"""
             def embed_query(self, text: str) -> list:
                 result = model.encode(text, max_length=512)
                 return result['dense_vecs'].tolist()
@@ -110,7 +119,9 @@ def create_embedding_model():
                 result = model.encode(texts, max_length=512)
                 return result['dense_vecs'].tolist()
 
-        return LocalEmbeddings()
+        instance = LocalEmbeddings()
+        _EMBEDDING_CACHE[provider] = instance
+        return instance
 
     raise ValueError(
         f"Unsupported EMBEDDING_PROVIDER={provider!r}. "

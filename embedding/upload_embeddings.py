@@ -26,10 +26,10 @@ from services.milvus_service import MilvusService
 # =======================
 # 配置
 # =======================
-EMBEDDING_DIR = PROJECT_ROOT / "embedding" / "embedding_merged"
+EMBEDDING_DIR = PROJECT_ROOT / "embedding" / "embedding_st"
 PROGRESS_FILE = PROJECT_ROOT / "embedding" / "upload_progress.json"
-BATCH_SIZE = 1000
-CHUNK_SIZE = 100  # 出错时用小块重试，跳过坏记录
+BATCH_SIZE = 500   # 减小批次，避免 Milvus 内存超限
+CHUNK_SIZE = 50    # 内存紧张时用更小块重试
 
 
 def load_embedding_data():
@@ -99,24 +99,35 @@ def build_vector(idx, embeddings, ids, metadata):
     }
 
 
-async def upload_indices(indices, embeddings, ids, metadata, milvus_service):
-    """上传一批索引，成功的返回索引列表，失败的跳过"""
+async def upload_indices(indices, embeddings, ids, metadata, milvus_service, depth=0):
+    """上传一批索引，成功的返回索引列表，失败的拆分重试"""
     vectors = [build_vector(i, embeddings, ids, metadata) for i in indices]
     try:
         success = await milvus_service.upsert(vectors)
         if success:
             return indices
+        # 数量对不上，拆分重试
+        if len(indices) > 1:
+            mid = len(indices) // 2
+            left_ok = await upload_indices(indices[:mid], embeddings, ids, metadata, milvus_service, depth+1)
+            right_ok = await upload_indices(indices[mid:], embeddings, ids, metadata, milvus_service, depth+1)
+            return left_ok + right_ok
         return []
     except Exception as e:
+        # 内存超限时等 2 秒让 Milvus 释放内存，再重试
+        if "quota" in str(e).lower() or "memory" in str(e).lower():
+            if depth < 5:
+                await asyncio.sleep(2)
+            else:
+                await asyncio.sleep(5)
         # 整批失败，如果还能拆分就拆分，否则单条上传跳过坏的
         if len(indices) > 1:
             mid = len(indices) // 2
-            left_ok = await upload_indices(indices[:mid], embeddings, ids, metadata, milvus_service)
-            right_ok = await upload_indices(indices[mid:], embeddings, ids, metadata, milvus_service)
+            left_ok = await upload_indices(indices[:mid], embeddings, ids, metadata, milvus_service, depth+1)
+            right_ok = await upload_indices(indices[mid:], embeddings, ids, metadata, milvus_service, depth+1)
             return left_ok + right_ok
         else:
             # 单条失败，跳过
-            print(f"\n   ⚠️  记录 {indices[0]} 跳过: {str(e)[:80]}")
             return []
 
 

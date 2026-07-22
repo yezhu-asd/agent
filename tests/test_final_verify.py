@@ -1,6 +1,6 @@
 """最终验证：cursor 分页结果是否等于 Milvus 真实全量"""
 import sys, os
-os.chdir(r"E:\wu\xidian\就业\java\agent项目\smart-appointment-ai-agent-master")
+os.chdir(r"E:\wu\xidian\job\java\agent\CampusCare")
 sys.path.insert(0, os.getcwd())
 from pymilvus import MilvusClient
 

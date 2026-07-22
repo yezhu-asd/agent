@@ -133,7 +133,7 @@ Milvus 服务包含：
 
 ```bash
 cd embedding
-python upload_to_milvus.py
+python upload_embeddings.py
 cd ..
 ```
 
@@ -152,7 +152,7 @@ MILVUS_COLLECTION_NAME=campus_medical_knowledge
 #### 6.4.4 测试 Milvus 连接
 
 ```bash
-python E:\wu\xidian\就业\java\agent项目\smart-appointment-ai-agent-master\milvus\test_milvus.py
+python E:\wu\xidian\job\java\agent\CampusCare\milvus\test_milvus.py
 ```
 
 #### 6.4.5 停止/清理 Milvus

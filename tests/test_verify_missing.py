@@ -1,6 +1,6 @@
 """验证缺失的 ID 是否真实存在于 Milvus 中"""
 import sys, os
-os.chdir(r"E:\wu\xidian\就业\java\agent项目\smart-appointment-ai-agent-master")
+os.chdir(r"E:\wu\xidian\job\java\agent\CampusCare")
 sys.path.insert(0, os.getcwd())
 from pymilvus import MilvusClient
 
