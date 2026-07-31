@@ -4,7 +4,7 @@
 
 ## 快速部署 Milvus 向量数据库
 
-本项目支持本地 Milvus 向量数据库，内置 107万条医学问答向量数据。快速部署步骤：
+本项目支持本地 Milvus 向量数据库，内置 100万条医学问答向量数据。快速部署步骤：
 
 ```bash
 # 1. 启动 Milvus 服务
@@ -12,7 +12,7 @@ docker-compose -f milvus/docker-compose.milvus.yml up -d
 
 # 2. 等待 30 秒后，上传向量数据
 cd embedding
-python upload_to_milvus.py
+python upload_embeddings.py
 cd ..
 
 # 3. 配置并启动应用
@@ -129,7 +129,7 @@ Milvus 服务包含：
 
 #### 6.4.2 上传医学向量数据
 
-确保 `embedding/embedding_merged/` 目录下有向量数据文件，然后运行：
+确保 `embedding/embedding_st/` 目录下有向量数据文件，然后运行：
 
 ```bash
 cd embedding
@@ -137,7 +137,7 @@ python upload_embeddings.py
 cd ..
 ```
 
-该脚本会上传约 107万条医学问答向量到 Milvus，预计耗时 5-15 分钟。
+该脚本会上传约 100万条医学问答向量到 Milvus，预计耗时 1-2 小时。
 
 #### 6.4.3 配置应用使用 Milvus
 
@@ -231,7 +231,7 @@ python -m pytest tests/test_token_integration.py -v --tb=short
 当前版本：`2.1.0-milvus`
 
 - 完成本地 Milvus 向量数据库集成
-- 支持 107万条医学问答向量检索
+- 支持 100万条医学问答向量检索
 - 完成 Pinecone → Milvus 配置切换
 - 版本 `2.0.0-medical` 功能：
   - 完成校园医务室语义迁移
@@ -280,29 +280,29 @@ git config --global --get https.proxy
 
 | 文件 | 大小 | 说明 | 下载链接 |
 |------|------|------|----------|
-| `embedding.7z` | ~4 GB | 医学问答向量数据（约 107 万条），供 Milvus 检索使用 | [百度网盘](https://pan.baidu.com/s/1JUECjh-i_KnvbJnCEEVKcQ?pwd=nxhq) 提取码：`nxhq` |
+| `embedding_st.zip` | ~3.7 GB | 医学问答向量数据（100 万条，768 维，PCA 降维后），供 Zilliz Cloud 检索使用 | [百度网盘](https://pan.baidu.com/s/16lB_EP62HrcAyq7G3NDuPg?pwd=djgf) 提取码：`djgf` |
 | `models.7z` | ~2.1 GB | BGE-M3 嵌入模型权重，供本地离线 embedding 使用 | [百度网盘](https://pan.baidu.com/s/1btG4FcYFbX-rrNVN04z_RQ?pwd=swew) 提取码：`swew` |
 
 #### 下载后操作步骤
 
 下载完成后，分别解压到对应目录：
 
-**① embedding.7z — 向量数据**
+**① embedding_st.zip — 向量数据**
 
-解压后应得到 `embedding/embedding_merged/` 目录，里面包含 `.npy` 向量文件。解压完成后启动 Milvus 并上传：
+解压后应得到 `embedding/embedding_st/` 目录，里面包含 4 个文件：
+- `embeddings.npy` — 100 万条 768 维向量
+- `ids.npy` — 向量 ID
+- `metadata.npy` — 元数据
+- `pca_model.pkl` — PCA 降维模型（查询时用）
 
 ```bash
-# 1. 确保 embedding/embedding_merged/ 目录存在
-
-# 2. 启动 Milvus
-docker-compose -f milvus/docker-compose.milvus.yml up -d
-
-# 3. 等待 30 秒后上传向量数据
-cd embedding
-python upload_embeddings.py
+# 解压后确认目录结构：
+# embedding/embedding_st/
+# ├── embeddings.npy   (约 2.9 GB)
+# ├── ids.npy          (42 MB)
+# ├── metadata.npy     (730 MB)
+# └── pca_model.pkl    (6 MB)
 ```
-
-上传完成后即可用于医学知识 RAG 检索。
 
 **② models.7z — BGE-M3 模型权重**
 

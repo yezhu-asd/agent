@@ -69,19 +69,15 @@ Thumbs.db
 # --- Jupyter ---
 .ipynb_checkpoints/
 
-\# BGE-M3 大模型权重文件夹（核心，避免超大文件上传GitHub）
-
- bge-m3/ 
-
-*.bin 
-
-*.safetensors 
-
-*.ckpt 
-
-*.pth 
-
+# --- BGE-M3 大模型权重文件夹（核心，避免超大文件上传GitHub） ---
+models/bge-m3/
+*.bin
+*.safetensors
+*.ckpt
+*.pth
 *.onnx
 
 # --- 大文件压缩包（不上传GitHub） ---
 *.7z
+*.tar.gz
+*.zip
