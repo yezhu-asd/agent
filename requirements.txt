@@ -24,10 +24,13 @@ pytest>=7.0.0
 scikit-learn>=1.4
 
 # ── FlagEmbedding BGE-M3 依赖（已验证可工作，2026-07-14）──
-# GPU 用户：先单独装 torch：pip install torch==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124
-# CPU 用户：去掉 +cu124，pip 会自动安装 CPU 版
+# ⚠️ torch 版本必须匹配 GPU 架构：
+#   - RTX 50 系（Blackwell/sm_120，如 RTX 5090）：需要 torch>=2.9 nightly 或 cu128+
+#     pip install --pre torch --index-url https://download.pytorch.org/whl/nightly/cu128
+#   - RTX 30/40 系（Ampere/Ada）：torch==2.6.0+cu124
+#     pip install torch==2.6.0+cu124 --index-url https://download.pytorch.org/whl/cu124
+#   - CPU：pip install torch==2.6.0
 FlagEmbedding==1.4.0
-torch==2.6.0+cu124          # GPU 版；CPU 用户改为 torch==2.6.0
 transformers==4.57.6
 tokenizers>=0.22.0
 sentencepiece==0.2.2
