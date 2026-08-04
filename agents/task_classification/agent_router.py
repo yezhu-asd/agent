@@ -55,10 +55,13 @@ class AgentRouter:
         """设置各Agent的共享状态"""
         if self.appointment_agent and hasattr(self.appointment_agent, 'set_shared_state'):
             self.appointment_agent.set_shared_state(self.state_manager.state)
-        
+
         if self.consultant_agent and hasattr(self.consultant_agent, 'set_shared_state'):
             self.consultant_agent.set_shared_state(self.state_manager.state)
-        
+            # 注入 StateManager，供问诊流程跨状态切换（如转入预约）
+            if hasattr(self.consultant_agent, 'set_state_manager'):
+                self.consultant_agent.set_state_manager(self.state_manager)
+
         if self.knowledge_agent and hasattr(self.knowledge_agent, 'set_shared_state'):
             self.knowledge_agent.set_shared_state(self.state_manager.state)
     

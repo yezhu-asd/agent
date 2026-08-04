@@ -56,18 +56,94 @@ class ConsultationProcessor:
         '嗯', '嗯嗯', '是', '有', '对', '要'
     }
 
+    # 复杂症状追问表：复杂症状 → 追问维度清单（最多3轮）
+    # 每个维度: (字段名, 追问问题)
+    COMPLEX_SYMPTOM_PROBES = {
+        '肚子疼': [
+            ('location', '请问疼痛主要在哪个位置？是上腹、下腹还是肚脐周围？'),
+            ('nature', '是绞痛、刺痛、胀痛还是隐痛？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随发烧、恶心、腹泻等情况？'),
+        ],
+        '肚子痛': [
+            ('location', '请问疼痛主要在哪个位置？是上腹、下腹还是肚脐周围？'),
+            ('nature', '是绞痛、刺痛、胀痛还是隐痛？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随发烧、恶心、腹泻等情况？'),
+        ],
+        '腹痛': [
+            ('location', '请问疼痛主要在哪个位置？是上腹、下腹还是肚脐周围？'),
+            ('nature', '是绞痛、刺痛、胀痛还是隐痛？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随发烧、恶心、腹泻等情况？'),
+        ],
+        '头疼': [
+            ('location', '请问头痛主要在哪个部位？是前额、后脑勺还是太阳穴两侧？'),
+            ('nature', '是胀痛、刺痛、搏动性疼痛还是紧绷感？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随恶心、畏光、视力模糊等情况？'),
+        ],
+        '头痛': [
+            ('location', '请问头痛主要在哪个部位？是前额、后脑勺还是太阳穴两侧？'),
+            ('nature', '是胀痛、刺痛、搏动性疼痛还是紧绷感？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随恶心、畏光、视力模糊等情况？'),
+        ],
+        '胸痛': [
+            ('location', '请问胸痛主要在哪个位置？是左胸、右胸还是胸骨后？'),
+            ('nature', '是压榨样疼痛、刺痛还是闷痛？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随呼吸困难、出汗、心慌等情况？'),
+        ],
+        '胸口疼': [
+            ('location', '请问胸痛主要在哪个位置？是左胸、右胸还是胸骨后？'),
+            ('nature', '是压榨样疼痛、刺痛还是闷痛？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随呼吸困难、出汗、心慌等情况？'),
+        ],
+        '胸闷': [
+            ('location', '请问胸闷主要在哪个部位？'),
+            ('nature', '是闷胀感、压迫感还是呼吸不畅？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随心慌、气短、头晕等情况？'),
+        ],
+        '咳嗽': [
+            ('nature', '是干咳还是有痰的咳嗽？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随发烧、咽痛、流鼻涕等情况？'),
+        ],
+        '胃疼': [
+            ('location', '请问胃疼主要在哪个位置？是上腹部吗？'),
+            ('nature', '是隐痛、绞痛还是烧灼样痛？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随反酸、恶心、食欲不振等情况？'),
+        ],
+        '恶心': [
+            ('nature', '是持续想吐还是偶尔恶心？'),
+            ('duration', '这个情况持续多久了？'),
+            ('concomitant', '有没有伴随呕吐、腹痛、头晕等情况？'),
+        ],
+    }
+
+    # 复杂症状关键词（用于检测哪些输入触发追问）
+    COMPLEX_SYMPTOM_KEYS = list(COMPLEX_SYMPTOM_PROBES.keys())
+
     def __init__(self, knowledge_retriever: KnowledgeRetriever,
                  consultation_classifier: ConsultationClassifier,
                  response_generator: ResponseGenerator,
                  memory_service=None,
                  conversation_id=None,
-                 appointment_agent=None):
+                 appointment_agent=None,
+                 shared_state=None,
+                 state_manager=None):
         self.knowledge_retriever = knowledge_retriever
         self.consultation_classifier = consultation_classifier
         self.response_generator = response_generator
         self.memory = memory_service
         self.conversation_id = conversation_id
         self.appointment_agent = appointment_agent
+        self.shared_state = shared_state
+        self.state_manager = state_manager
 
     def _get_slots(self) -> Dict[str, Any]:
         if self.memory and self.conversation_id:
@@ -169,6 +245,25 @@ class ConsultationProcessor:
             slots = self._get_slots()
             current_substate = slots.get("doctor_sub_state", "initial_assessment")
 
+            # 复杂症状判断（优先于确认流程）
+            knowledge_patterns = ['如何预防', '怎么预防', '什么是', '如何治疗', '怎么治疗',
+                                  '注意事项', '能吃吗', '有什么用', '是什么原因',
+                                  '怎么回事', '为什么会']
+            is_knowledge_question = any(p in user_input for p in knowledge_patterns)
+            complex_symptom = self._detect_complex_symptom(user_input) if not is_knowledge_question else ""
+
+            # 处于追问收集状态 → 继续追问流程（最高优先级）
+            if current_substate == "collecting_symptoms":
+                async for token in self._probe_symptom_flow(user_input, session_id):
+                    yield token
+                return
+
+            # 新输入含复杂症状 → 触发追问诊断
+            if complex_symptom:
+                async for token in self._probe_symptom_flow(user_input, session_id):
+                    yield token
+                return
+
             # 如果处于等待确认状态 → 处理用户回复
             if current_substate == "awaiting_confirmation":
                 reply_type = self._is_confirmation_reply(user_input)
@@ -188,11 +283,6 @@ class ConsultationProcessor:
                     yield token
                 return
 
-            # 明确知识类问题（如何预防、什么是...）→ 直接 RAG，不走问诊
-            knowledge_patterns = ['如何预防', '怎么预防', '什么是', '如何治疗', '怎么治疗',
-                                  '注意事项', '能吃吗', '有什么用', '是什么原因',
-                                  '怎么回事', '为什么会']
-            is_knowledge_question = any(p in user_input for p in knowledge_patterns)
             if is_knowledge_question:
                 async for token in self._do_rag_answer(user_input, session_id, is_knowledge_only=True):
                     yield token
@@ -276,6 +366,32 @@ class ConsultationProcessor:
                 return word
         return ""
 
+    # 症状 → 推荐科室映射（用于预约时主动推荐科室）
+    SYMPTOM_DEPARTMENT_MAP = [
+        (('牙疼', '牙龈肿', '牙齿', '牙痛', '智齿', '口腔'), '口腔科'),
+        (('眼睛疼', '眼睛红', '视力', '眼', '近视', '结膜炎'), '眼科'),
+        (('耳朵', '耳鸣', '听力', '耳痛', '中耳炎', '鼻塞', '鼻炎', '喉咙痛', '嗓子疼', '咽喉', '扁桃体', '咳嗽'), '耳鼻喉科'),
+        (('皮疹', '过敏', '痒', '起疙瘩', '荨麻疹', '湿疹', '皮炎', '痘痘'), '皮肤科'),
+        (('妇科', '月经', '白带', '痛经', '阴道'), '妇科'),
+        (('宝宝', '孩子', '儿童', '小儿', '婴儿'), '儿科'),
+        (('失眠', '睡不着', '焦虑', '抑郁', '心理', '情绪', '压力'), '心理科'),
+        (('腰疼', '腰痛', '腰', '背痛', '颈椎', '腰椎', '关节', '肌肉', '骨头', '扭伤'), '骨科'),
+        (('肚子疼', '腹痛', '胃', '腹泻', '拉肚子', '恶心', '呕吐', '腹胀', '消化不良', '便秘'), '内科'),
+        (('头疼', '头痛', '头晕', '偏头痛', '神经', '中风', '脑'), '神经内科'),
+        (('胸痛', '胸口疼', '胸闷', '心慌', '心悸', '心脏', '呼吸'), '内科'),
+        (('发烧', '发热', '感冒', '流感', '高烧', '低烧'), '内科'),
+        (('外伤', '创伤', '骨折', '伤口', '出血', '缝合'), '外科'),
+    ]
+
+    @classmethod
+    def _recommend_department(cls, query: str) -> str:
+        """根据症状文本推荐预约科室"""
+        for keywords, dept in cls.SYMPTOM_DEPARTMENT_MAP:
+            for kw in keywords:
+                if kw in query:
+                    return dept
+        return ""
+
     async def _handle_confirmation_reply(self, user_input: str, session_id: str) -> AsyncGenerator[str, None]:
         """处理用户对症状确认的回复"""
         reply_type = self._is_confirmation_reply(user_input)
@@ -287,22 +403,59 @@ class ConsultationProcessor:
             logger.info(f"[症状确认] 用户确认有症状，流转到预约: {original_query}")
             self._reset_doctor_substate()
 
+            # 把全局状态切换到 APPOINTMENT，让后续输入由预约流程接管
+            if self.state_manager is not None:
+                try:
+                    self.state_manager.transition_to_appointment()
+                    logger.info("[症状确认] 全局状态切换为 APPOINTMENT")
+                except Exception as e:
+                    logger.warning(f"[症状确认] 切换全局状态失败: {e}")
+            elif self.shared_state is not None:
+                try:
+                    from config.constants import StateEnum
+                    self.shared_state.value = StateEnum.APPOINTMENT
+                except Exception as e:
+                    logger.warning(f"[症状确认] 切换 shared_state 失败: {e}")
+
             # 如果注入了预约 Agent，直接流转到预约流程
             if self.appointment_agent is not None:
-                # 把用户症状作为预约背景传给预约 Agent
+                # 把用户症状作为预约背景传给预约 Agent，并根据症状推荐科室
                 if self.conversation_id and self.memory:
                     slots = self.memory.get_appointment_slots(self.conversation_id)
                     slots['appointment_reason'] = original_query
                     slots['symptoms'] = original_query
+                    recommended = self._recommend_department(original_query)
+                    if recommended:
+                        slots['project'] = recommended
+                        slots['recommended_department'] = recommended
+                        # 同步到预约 Agent 的 appointment_history，让流程直接使用推荐科室
+                        if hasattr(self.appointment_agent, 'appointment_history'):
+                            self.appointment_agent.appointment_history['project'] = recommended
+                            # 同步到 Redis，确保跨请求恢复时科室保留
+                            if hasattr(self.appointment_agent, '_sync_to_memory_slots'):
+                                try:
+                                    self.appointment_agent._sync_to_memory_slots()
+                                except Exception as e:
+                                    logger.warning(f"[症状确认] 同步预约科室到 Redis 失败: {e}")
                     self.memory.set_appointment_slots(self.conversation_id, slots)
 
                 # 通知用户即将开始预约
-                transition = "好的，我帮您预约校医务室。请告诉我您希望预约哪位医生和什么时间段。\n\n"
+                if self.conversation_id and self.memory:
+                    slots = self.memory.get_appointment_slots(self.conversation_id)
+                    recommended = slots.get('recommended_department')
+                    if recommended:
+                        transition = f"好的，我帮您预约校医务室。根据您描述的「{original_query}」，建议挂{recommended}科室。\n请告诉我您希望预约的时间和医生偏好（如男/女医生）。\n\n"
+                    else:
+                        transition = "好的，我帮您预约校医务室。请告诉我您希望预约的时间、科室和医生偏好。\n\n"
+                else:
+                    transition = "好的，我帮您预约校医务室。请告诉我您希望预约的时间、科室和医生偏好。\n\n"
                 for char in transition:
                     yield char
 
-                # 将控制权交给预约 Agent，继续收集预约信息
-                async for token in self.appointment_agent.run_stream(user_input=original_query):
+                # 将控制权交给预约 Agent。
+                # 注意：不能把症状词（如"肚子疼"）作为输入传给预约解析器，
+                # 否则 LLM 会臆造科室/医生。用预约引导语初始化预约流程。
+                async for token in self.appointment_agent.run_stream(user_input="我想预约校医务室就诊"):
                     yield token
                 return
 
@@ -339,6 +492,196 @@ class ConsultationProcessor:
             for char in clarification:
                 yield char
 
+    # ======================= 症状追问诊断 =======================
+
+    def _detect_complex_symptom(self, user_input: str) -> str:
+        """检测输入是否包含复杂症状，返回症状关键词（长词优先）"""
+        for word in sorted(self.COMPLEX_SYMPTOM_KEYS, key=len, reverse=True):
+            if word in user_input:
+                return word
+        return ""
+
+    def _get_probe_state(self) -> Dict[str, Any]:
+        """获取诊断探针状态"""
+        slots = self._get_slots()
+        return slots.get('diagnosis_probe') or {}
+
+    def _save_probe_state(self, probe: Dict[str, Any]):
+        """保存诊断探针状态"""
+        slots = self._get_slots()
+        slots['diagnosis_probe'] = probe
+        if probe:
+            slots['doctor_sub_state'] = 'collecting_symptoms'
+        self._set_slots(slots)
+
+    async def _extract_probe_answer(self, user_reply: str) -> Dict[str, str]:
+        """用 LLM 从用户回复中提取症状信息字段"""
+        prompt = (
+            "你是一个医学信息提取器。从用户的症状描述中提取以下字段：\n"
+            "location: 疼痛/症状的位置（如右下腹、前额），没有则为空\n"
+            "nature: 症状性质（如绞痛、刺痛、胀痛），没有则为空\n"
+            "duration: 持续时间（如两天、一周），没有则为空\n"
+            "concomitant: 伴随症状（如发烧、恶心），没有则为空\n\n"
+            f"用户描述：{user_reply}\n\n"
+            "只输出 JSON，格式：{\"location\": \"\", \"nature\": \"\", \"duration\": \"\", \"concomitant\": \"\"}"
+        )
+        try:
+            response = await self.response_generator.llm.ainvoke([{"role": "user", "content": prompt}])
+            content = response.content.strip()
+            # 兼容 markdown 包裹
+            if content.startswith("```"):
+                content = content.split("\n", 1)[-1].rsplit("```", 1)[0]
+            import json as _json
+            data = _json.loads(content)
+            return {k: (v or '') for k, v in data.items() if k in ('location', 'nature', 'duration', 'concomitant')}
+        except Exception as e:
+            logger.warning(f"[追问] LLM 提取失败，降级关键词匹配: {e}")
+            return self._keyword_probe_extract(user_reply)
+
+    def _keyword_probe_extract(self, text: str) -> Dict[str, str]:
+        """关键词兜底提取"""
+        import re
+        result = {'location': '', 'nature': '', 'duration': '', 'concomitant': ''}
+        # 位置
+        location_words = ['上腹', '下腹', '肚脐', '右下腹', '左下腹', '右上腹', '左上腹', '前额', '后脑', '太阳穴', '左胸', '右胸', '胸骨', '胃', '腹部']
+        for w in location_words:
+            if w in text:
+                result['location'] = w
+                break
+        # 性质
+        nature_words = ['绞痛', '刺痛', '胀痛', '隐痛', '烧灼', '压榨', '搏动', '紧绷', '闷痛', '疼痛']
+        for w in nature_words:
+            if w in text:
+                result['nature'] = w
+                break
+        # 持续时间
+        duration_match = re.search(r'([一二三四五六七八九十\d]+)天|([一二三四五六七八九十\d]+)周|([一二三四五六七八九十\d]+)月|([一二三四五六七八九十\d]+)小时', text)
+        if duration_match:
+            result['duration'] = duration_match.group(0)
+        # 伴随症状
+        concomitant_words = ['发烧', '发热', '恶心', '呕吐', '腹泻', '拉肚子', '心慌', '气短', '出汗', '头晕', '畏光', '反酸', '食欲不振', '流鼻涕', '咽痛']
+        found = [w for w in concomitant_words if w in text]
+        if found:
+            result['concomitant'] = '、'.join(found)
+        return result
+
+    async def _generate_probe_message(self, symptom: str, collected: Dict[str, str],
+                                      next_question: str) -> str:
+        """基于已收集的症状信息，用 LLM 生成诊断可能性分析 + 追问
+
+        让追问不再生硬，像真实医生一样先给出基于已知信息的初步判断，
+        再追问下一个细节。
+        """
+        collected_desc = '、'.join(v for v in collected.values() if v) or '尚未明确'
+        prompt = (
+            "你是校园医务室的全科医生，正在问诊。\n"
+            f"主诉症状：{symptom}\n"
+            f"目前已了解的信息：{collected_desc}\n\n"
+            "请基于以上信息，用 2-3 句话给出可能的病因方向（用'可能涉及''常见原因包括'等措辞，"
+            "不要下确定性诊断，语气温和专业），然后自然地引出下一个问题。\n"
+            "注意：不要直接复述用户信息，要把它们转化为医学分析的上下文。\n\n"
+            f"需要追问的问题：{next_question}"
+        )
+        try:
+            response = await self.response_generator.llm.ainvoke([{"role": "user", "content": prompt}])
+            content = response.content.strip()
+            if content:
+                return content + "\n"
+        except Exception as e:
+            logger.warning(f"[追问] LLM 生成分析失败，使用模板: {e}")
+        # 兜底模板
+        return f"根据您提到的{collected_desc}，这有助于初步判断。为了更准确，请您再回答：\n{next_question}\n"
+
+    async def _probe_symptom_flow(self, user_input: str, session_id: str) -> AsyncGenerator[str, None]:
+        """复杂症状追问流程：最多3轮，信息不足就继续问，收集到关键信息就停止"""
+        # 用户在追问过程中表达了预约/不预约意图 → 直接流转到确认预约
+        confirm = self._is_confirmation_reply(user_input)
+        if confirm != 'unclear':
+            async for token in self._handle_confirmation_reply(user_input, session_id):
+                yield token
+            return
+
+        probe = self._get_probe_state()
+        # 追问进行中：优先用探针保存的症状，回答里可能不含症状词
+        if probe and probe.get('symptom'):
+            symptom = probe['symptom']
+        else:
+            symptom = self._detect_complex_symptom(user_input)
+
+        # 首次进入（无探针或症状变了）：初始化探针，只问第一个问题
+        if not probe or probe.get('symptom') != symptom or not probe.get('asked'):
+            # 保存症状到待确认槽位，供后续预约流转使用
+            slots = self._get_slots()
+            slots["pending_symptom_query"] = symptom
+            self._set_slots(slots)
+            probe = {
+                'symptom': symptom,
+                'round': 0,
+                'asked': [],
+                'collected': {},
+            }
+            self._save_probe_state(probe)
+            questions = self.COMPLEX_SYMPTOM_PROBES.get(symptom, [])
+            if questions:
+                probe['round'] += 1
+                next_q = questions[0]
+                probe['asked'].append(next_q[0])
+                self._save_probe_state(probe)
+                # 首轮：用 LLM 生成基于主诉的诊断可能性分析
+                message = await self._generate_probe_message(
+                    symptom, probe['collected'], next_q[1]
+                )
+                for char in message:
+                    yield char
+            return
+
+        # 用户回答了追问 → 提取新信息
+        extracted = await self._extract_probe_answer(user_input)
+        for k, v in extracted.items():
+            if v and not probe['collected'].get(k):
+                probe['collected'][k] = v
+        # 记录已提取的伴随症状到槽位
+        if probe['collected'].get('concomitant'):
+            slots = self._get_slots()
+            if 'accompanying_symptoms' not in slots or not slots.get('accompanying_symptoms'):
+                slots['accompanying_symptoms'] = []
+            for s in probe['collected']['concomitant'].split('、'):
+                if s and s not in slots['accompanying_symptoms']:
+                    slots['accompanying_symptoms'].append(s)
+            self._set_slots(slots)
+
+        questions = self.COMPLEX_SYMPTOM_PROBES.get(symptom, [])
+        unasked = [q for q in questions if q[0] not in probe['asked'] and not probe['collected'].get(q[0])]
+
+        # 收集到关键信息（位置+性质+持续时间）或达到3轮或问题问完 → 停止追问
+        collected_keys = set(probe['collected'].keys())
+        key_fields = {'location', 'nature', 'duration'}
+        has_key_info = key_fields.issubset(collected_keys)
+        if probe['round'] >= 3 or has_key_info or not unasked:
+            self._save_probe_state({})  # 清空探针
+            self._reset_doctor_substate()
+            # 进入正式问诊（用已收集信息增强查询）
+            enhanced_query = symptom
+            if probe['collected']:
+                parts = [v for v in probe['collected'].values() if v]
+                if parts:
+                    enhanced_query = f"{symptom}，{'，'.join(parts)}"
+            async for token in self._do_doctor_consultation(enhanced_query, user_input, session_id):
+                yield token
+            return
+
+        # 还有未问问题 → 结合已有信息生成诊断分析 + 追问下一个
+        probe['round'] += 1
+        next_q = unasked[0]
+        probe['asked'].append(next_q[0])
+        self._save_probe_state(probe)
+
+        message = await self._generate_probe_message(
+            symptom, probe['collected'], next_q[1]
+        )
+        for char in message:
+            yield char
+
     async def _do_doctor_consultation(self, original_query: str, user_reply: str, session_id: str) -> AsyncGenerator[str, None]:
         """医学问诊流程：结合知识库给建议，并建议预约医务室"""
         knowledge_docs = await self.knowledge_retriever.search_knowledge(original_query, top_k=3)
@@ -373,7 +716,7 @@ class ConsultationProcessor:
             "1. 简要的初步分析（不要过度诊断）\n"
             "2. 一般性的自我护理建议\n"
             "3. 如果症状持续或加重，建议及时到校医务室就诊\n"
-            "最后主动询问是否需要帮您预约校医务室。"
+            "注意：不要询问是否需要预约，这个问题由系统统一处理。"
         )
 
         try:
@@ -388,13 +731,22 @@ class ConsultationProcessor:
                 "1. 注意休息，多喝温水\n"
                 "2. 观察症状变化\n"
                 "3. 如果症状持续或加重，请及时到校医务室就诊\n\n"
-                "需要我帮您预约校医务室吗？"
             )
             for char in fallback:
                 yield char
 
-        # 问诊完成，重置子状态
-        self._reset_doctor_substate()
+        # 问诊完成：进入预约确认状态，输出按钮供用户选择
+        slots = self._get_slots()
+        slots["doctor_sub_state"] = "awaiting_confirmation"
+        slots["pending_symptom_query"] = original_query
+        self._set_slots(slots)
+
+        confirm_question = (
+            "\n\n需不需要我帮您预约校医务室呢？\n"
+            "[BUTTONS]需要,不需要\n"
+        )
+        for char in confirm_question:
+            yield char
 
     async def _do_rag_answer(self, user_input: str, session_id: str,
                              is_knowledge_only: bool = False,

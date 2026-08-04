@@ -70,7 +70,8 @@ class ConsultantAgent:
             self.response_generator,
             conversation_memory,
             self.conversation_id,
-            self.appointment_agent
+            self.appointment_agent,
+            self.shared_state
         )
 
         # 如果有conversation_id，确保医疗槽位存在，同时设置user_id
@@ -113,6 +114,15 @@ class ConsultantAgent:
     def set_shared_state(self, shared_state):
         """设置共享状态"""
         self.shared_state = shared_state
+        # 同步给 ConsultationProcessor，使其能切换全局状态（如转入预约流程）
+        if hasattr(self, 'consultation_processor') and self.consultation_processor is not None:
+            self.consultation_processor.shared_state = shared_state
+
+    def set_state_manager(self, state_manager):
+        """设置 StateManager，用于跨流程状态切换（如转入预约）"""
+        self.state_manager = state_manager
+        if hasattr(self, 'consultation_processor') and self.consultation_processor is not None:
+            self.consultation_processor.state_manager = state_manager
 
     def set_unrelated_callback(self, callback):
         """设置处理非医学问题的回调函数"""
