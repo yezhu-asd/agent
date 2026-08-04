@@ -393,7 +393,88 @@
         .risk-close:hover {
             background: rgba(255, 255, 255, 0.5);
         }
-        
+
+        /* 风险弹窗操作按钮 */
+        .risk-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        .risk-btn {
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .risk-btn-call {
+            background: #ff3333;
+            color: white;
+            box-shadow: 0 2px 8px rgba(255, 51, 51, 0.4);
+        }
+
+        .risk-btn-call:hover {
+            background: #cc0000;
+            transform: translateY(-1px);
+        }
+
+        .risk-btn-ack {
+            background: rgba(255, 255, 255, 0.9);
+            color: #d63031;
+        }
+
+        .risk-btn-ack:hover {
+            background: white;
+            transform: translateY(-1px);
+        }
+
+        .risk-alert.high-risk {
+            animation: slideIn 0.3s ease-out, riskPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes riskPulse {
+            0%, 100% { box-shadow: 0 4px 15px rgba(214, 48, 49, 0.3); }
+            50% { box-shadow: 0 4px 25px rgba(214, 48, 49, 0.7); }
+        }
+
+        /* 紧急模式常驻横幅 */
+        .emergency-banner {
+            background: linear-gradient(135deg, #ae2012 0%, #d63031 100%);
+            color: white;
+            padding: 10px 20px;
+            margin: 10px 30px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .emergency-banner.show {
+            display: block;
+        }
+
+        /* 聊天中的紧急提示块 */
+        .bot-emergency {
+            background: #fff5f5;
+            border: 2px solid #d63031;
+            border-left: 5px solid #ae2012;
+            color: #ae2012;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            line-height: 1.6;
+            margin: 6px 0;
+            animation: slideIn 0.3s ease-out;
+        }
+
         @keyframes typing {
             0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
             30% { transform: translateY(-10px); opacity: 1; }
@@ -476,9 +557,19 @@
         <div class="risk-alert" id="riskAlert" style="display: none;">
             <span class="risk-icon">⚠️</span>
             <span class="risk-text" id="riskText">您描述的症状存在风险，建议立即就医或拨打校医室咨询电话</span>
-            <button class="risk-close" onclick="closeRiskAlert()" title="关闭警告">
-                ✕
-            </button>
+            <div class="risk-actions">
+                <button class="risk-btn risk-btn-call" onclick="callEmergency()">
+                    📞 拨打 120
+                </button>
+                <button class="risk-btn risk-btn-ack" onclick="acknowledgeRisk()">
+                    我已了解，立即就医
+                </button>
+            </div>
+        </div>
+
+        <!-- 紧急模式常驻横幅 -->
+        <div class="emergency-banner" id="emergencyBanner">
+            🚨 当前处于紧急咨询模式：请立即拨打 120 或前往校医务室，切勿延误！
         </div>
         
         <!-- 聊天内容区域 -->
@@ -647,8 +738,8 @@
                 }
             }
 
-            // 用正则分割所有 [THOUGHT]、[REPLY]、[STATE] 标签及其内容
-            const pattern = /(\[THOUGHT[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|$)|(\[REPLY[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|$)/g;
+            // 用正则分割所有 [THOUGHT]、[REPLY]、[STATE]、[ALERT] 标签及其内容
+            const pattern = /(\[THOUGHT[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|\[ALERT|$)|(\[REPLY[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|\[ALERT|$)|(\[ALERT[^\]]*\][\s\S]*?)(?=\[THOUGHT|\[REPLY|\[STATE|\[ALERT|$)/g;
             let result = [];
             let match;
             while ((match = pattern.exec(text)) !== null) {
@@ -677,6 +768,12 @@
                     }
 
                     result.push(styledReply);
+                } else if (match[3]) {
+                    // ALERT - 紧急提示，红色高亮
+                    const alertText = match[3].replace(/\[ALERT[^\]]*\]/, '').trim().replace(/\n/g, '<br>');
+                    result.push(`<div class="bot-emergency">🚨 ${alertText}</div>`);
+                    // 显示紧急模式横幅
+                    showEmergencyBanner();
                 }
             }
 
@@ -707,6 +804,39 @@
     function closeRiskAlert() {
         const alert = document.getElementById('riskAlert');
         alert.style.display = 'none';
+    }
+
+    // 高风险弹窗确认状态
+    let highRiskAcknowledged = false;
+    let pendingRiskKeyword = null;
+
+    // 拨打 120
+    function callEmergency() {
+        window.open('tel:120', '_self');
+    }
+
+    // 我已了解，立即就医
+    function acknowledgeRisk() {
+        highRiskAcknowledged = true;
+        closeRiskAlert();
+        showEmergencyBanner();
+        // 若存在未发送的高风险消息，自动补发
+        if (pendingRiskKeyword) {
+            const msg = `[RISK]${pendingRiskKeyword}`;
+            pendingRiskKeyword = null;
+            userInput.value = msg;
+            chatForm.dispatchEvent(new Event('submit'));
+        }
+    }
+
+    // 显示紧急模式横幅
+    function showEmergencyBanner() {
+        document.getElementById('emergencyBanner').classList.add('show');
+    }
+
+    // 隐藏紧急模式横幅
+    function hideEmergencyBanner() {
+        document.getElementById('emergencyBanner').classList.remove('show');
     }
 
     // 检测风险症状
@@ -756,15 +886,16 @@
     function showRiskAlert(riskLevel, keyword) {
         const alert = document.getElementById('riskAlert');
         const riskText = document.getElementById('riskText');
-        
+
         if (riskLevel === 'high') {
             alert.classList.add('high-risk');
             riskText.textContent = `⚠️ 紧急提示：您提到的"${keyword}"属于高风险症状，请立即就医或拨打120急救电话！`;
+            pendingRiskKeyword = keyword;
         } else if (riskLevel === 'medium') {
             alert.classList.remove('high-risk');
             riskText.textContent = `⚠️ 风险提示：您提到的"${keyword}"需要尽快就医，建议立即就医或拨打校医室咨询电话`;
         }
-        
+
         alert.style.display = 'flex';
     }
 
@@ -772,37 +903,58 @@
         e.preventDefault();
         const text = userInput.value.trim();
         if (!text) return;
-        
+
         // 检测用户输入中的风险症状
         const riskCheck = checkRiskSymptoms(text);
+        let isHighRisk = false;
         if (riskCheck.risk !== 'none') {
             showRiskAlert(riskCheck.risk, riskCheck.keyword);
+            if (riskCheck.risk === 'high') {
+                // 高风险：阻塞发送，等待用户确认就医
+                isHighRisk = true;
+                if (!highRiskAcknowledged) {
+                    pendingRiskKeyword = text;
+                    addMessage(text, 'user');
+                    userInput.value = '';
+                    // 提示用户先确认
+                    addMessage('⚠️ 检测到高风险症状，请先点击上方"我已了解，立即就医"或"拨打120"按钮。', 'bot');
+                    return;
+                }
+            }
         } else {
             closeRiskAlert();
         }
-        
+
         // 获取 token
         const token = localStorage.getItem('token');
         if (!token) {
             window.location.href = '/login';
             return;
         }
-        
+
         // 禁用发送按钮
         const sendBtn = document.getElementById('send-btn');
         sendBtn.disabled = true;
         sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 发送中...';
-        
+
         addMessage(text, 'user');
         userInput.value = '';
-        
+
         // 显示打字指示器
         showTypingIndicator();
         
         // 添加空的机器人消息
         addMessage('', 'bot');
         lastBotBubble = chatBox.querySelector('.message.bot:last-child .bubble');
-        
+
+        // 判断是否高风险信号（[RISK] 前缀或已确认高风险）
+        let riskFlag = 'none';
+        if (text.startsWith('[RISK]')) {
+            riskFlag = 'high';
+        } else if (isHighRisk && highRiskAcknowledged) {
+            riskFlag = 'high';
+        }
+
         try {
             const res = await fetch('/chat/stream', {
                 method: 'POST',
@@ -810,7 +962,10 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({message: text})
+                body: JSON.stringify({
+                    message: text.replace(/^\[RISK\]/, '').trim(),
+                    risk: riskFlag
+                })
             });
             
             if (res.status === 401) {

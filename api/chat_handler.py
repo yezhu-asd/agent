@@ -149,7 +149,35 @@ async def process_user_input_stream(
         'state': state,  # 当前医学状态 (CLASSIFY, DOCTOR_ASSESSMENT, APPOINTMENT, EMERGENCY等)
         'requires_emergency_check': True,  # 是否需要进行紧急症状检查
     }
-    
+
+    # 【步骤 5.5】高风险信号处理：记录风险事件并标记紧急模式
+    risk_level = context.get('risk')
+    if risk_level == 'high':
+        try:
+            # 1. 写 MySQL risk_events 表
+            from db.db_router import DatabaseRouter
+            from config.constants import get_state_storage, StateEnum
+            db_router = DatabaseRouter()
+            if db_router.consultations:
+                event_id = db_router.consultations.record_risk_event(
+                    user_id=user_id or 'anonymous',
+                    risk_type='red_flag_symptom',
+                    description=f"用户输入高风险症状: {user_input[:200]}",
+                    risk_score=90.0
+                )
+                logger.warning(f"[风险] 已记录红旗症状风险事件 #{event_id}, user={user_id}")
+            # 2. 写 Redis 风险标记（供紧急模式判断）
+            from services.conversation_memory_service import conversation_memory
+            conversation_memory.add_risk_event(
+                conversation_id or str(uuid.uuid4()),
+                {"type": "red_flag_symptom", "description": user_input[:200]}
+            )
+            # 3. 切换会话状态为紧急
+            if user_id and conversation_id:
+                get_state_storage().set_state(user_id, conversation_id, StateEnum.EMERGENCY)
+        except Exception as risk_e:
+            logger.error(f"[风险] 记录风险事件失败: {risk_e}", exc_info=True)
+
     logger.info(f"[ChatHandler] 处理请求: user={user_id}, conv={conversation_id}, input_len={len(user_input)}")
     
     try:

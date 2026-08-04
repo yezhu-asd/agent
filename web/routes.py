@@ -23,6 +23,7 @@ router = APIRouter(tags=["Web界面"])
 class ChatRequest(BaseModel):
     message: str
     state: str | None = None
+    risk: str | None = None  # 高风险信号：'high' 或 'none'
 
 @router.get("/login", response_class=HTMLResponse, summary="登录页面")
 async def login_page(request: Request):
@@ -59,7 +60,8 @@ async def chat_stream_endpoint(chat: ChatRequest, authorization: Optional[str] =
                     'user_name': session.get('user_name'),
                     'role': session.get('role'),
                     'created_at': session.get('created_at')
-                }
+                },
+                context={'risk': chat.risk} if chat.risk else None
             ):
                 yield token_chunk
         except Exception as exc:

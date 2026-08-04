@@ -14,11 +14,30 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 class InputParser:
     """用户输入解析器"""
-    
+
     def __init__(self, llm: BaseChatModel):
         self.llm = llm
         self.prompt = self._create_prompt_template()
         self.chain = self.prompt | self.llm
+
+    @staticmethod
+    def has_time_info(user_input: str) -> bool:
+        """快速检测用户输入是否包含明确的预约时间信息。
+
+        用于防止 LLM 在用户未提时间时自行编造默认时间。
+        """
+        import re
+        time_markers = [
+            '今天', '明天', '后天', '昨天', '上午', '下午', '中午', '晚上',
+            '凌晨', '早', '周', '星期', '号', '日', '点', '时', '分',
+            '几点', '什么时间', '预约时间', '几点钟',
+            r'\d{1,2}[:：]\d{2}',       # 10:30
+            r'早上', '中午', '今晚', '明早',
+        ]
+        for marker in time_markers:
+            if marker in user_input:
+                return True
+        return False
     
     def _create_prompt_template(self) -> PromptTemplate:
         """创建预约信息提取的Prompt模板（时间相关字段为占位符，每次调用时动态注入）"""

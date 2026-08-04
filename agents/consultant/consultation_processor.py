@@ -52,19 +52,22 @@ class ConsultationProcessor:
         '是的是的', '是的', '是啊', '是我', '有啊', '有的',
         '对的', '对啊', '没错', '确实', '自己有',
         '我有', '我是', '就是', '对，我',
-        '嗯', '嗯嗯', '是', '有', '对'
+        '需要', '要的', '需要的', '可以的', '好的',
+        '嗯', '嗯嗯', '是', '有', '对', '要'
     }
 
     def __init__(self, knowledge_retriever: KnowledgeRetriever,
                  consultation_classifier: ConsultationClassifier,
                  response_generator: ResponseGenerator,
                  memory_service=None,
-                 conversation_id=None):
+                 conversation_id=None,
+                 appointment_agent=None):
         self.knowledge_retriever = knowledge_retriever
         self.consultation_classifier = consultation_classifier
         self.response_generator = response_generator
         self.memory = memory_service
         self.conversation_id = conversation_id
+        self.appointment_agent = appointment_agent
 
     def _get_slots(self) -> Dict[str, Any]:
         if self.memory and self.conversation_id:
@@ -107,6 +110,31 @@ class ConsultationProcessor:
 
         # 包含症状词 → 需要确认
         return has_symptom
+
+    @staticmethod
+    def _is_query_text(text: str) -> bool:
+        """判断文本是否属于提问（用户问句），而非医学知识回答。
+
+        知识库 content/ask 字段常存用户提问原文，若作为知识传入 prompt，
+        会导致 LLM 把提问内容误当成用户描述的症状。
+        """
+        if not text or len(text) < 5:
+            return True
+        # 提问特征：含疑问词、第一人称求助、请求治疗建议等
+        query_markers = [
+            '怎么办', '怎么治', '什么药', '怎么处理', '能治好吗', '吃什么药',
+            '是怎么回事', '是什么原因', '如何', '为啥', '为什么',
+            '请问', '医生', '你好', '大夫', '专家',
+            '我该怎么办', '帮我', '请教', '求助', '求解',
+            '？', '?', '无', '没有', '不知道'
+        ]
+        for marker in query_markers:
+            if marker in text:
+                return True
+        # 第一人称求助句式（"我...了" "我...病"）
+        if re.search(r'我.{0,20}(病|疼|痛|了|查出|诊断)', text):
+            return True
+        return False
 
     def _is_confirmation_reply(self, user_input: str) -> str:
         """判断用户回复是确认还是否认
@@ -204,14 +232,23 @@ class ConsultationProcessor:
             try:
                 prompt = (
                     "你是校园医务室的健康知识助手，用户询问了以下症状相关的知识。\n"
-                    "请基于以下知识库信息，用1-2句话给出简洁的健康知识科普，语气中立专业。\n\n"
+                    "请严格基于下面提供的【相关医学知识】来回答，把知识中的具体病因、"
+                    "常见表现、日常调理建议等要点融入回答，不要泛泛而谈。\n"
+                    "回答要求：先简要复述用户症状，再结合知识给出 2-4 句具体科普内容。\n\n"
                 )
-                prompt += "相关医学知识：\n"
+                prompt += "【相关医学知识】\n"
                 for i, doc in enumerate(knowledge_docs, 1):
-                    content = doc.get('answer', doc.get('content', ''))
-                    if content:
+                    # 只用 answer（医生回答），避免把 ask（用户提问）当成知识传入
+                    content = doc.get('answer', '')
+                    if not content:
+                        content = doc.get('content', '')
+                    # 过滤掉疑似提问的文本（包含"怎么办/什么药/怎么治/我是/我..."等提问特征）
+                    if content and not self._is_query_text(content):
                         prompt += f"{i}. {content}\n"
-                prompt += f"\n用户问题：{user_input}\n\n请简洁回答。"
+                prompt += (
+                    f"\n【用户问题】{user_input}\n\n"
+                    "请结合上面的医学知识给出具体、有信息量的回答。"
+                )
                 response = await self.response_generator.llm.ainvoke([{"role": "user", "content": prompt}])
                 content = response.content.strip()
                 if content:
@@ -223,19 +260,12 @@ class ConsultationProcessor:
         if not has_relevant_knowledge:
             yield f"关于「{mentioned_symptom or user_input}」，这是校园常见症状之一。注意休息，如症状持续建议就医检查。\n\n"
 
-        # 再询问是否自己有症状
-        if mentioned_symptom:
-            question = (
-                f"请问是您自己出现了「{mentioned_symptom}」的症状吗？\n"
-                f"- 如果是，我可以帮您预约校医务室\n"
-                f"- 如果不是，我为您提供健康知识"
-            )
-        else:
-            question = (
-                f"请问是您自己出现了这个症状吗？\n"
-                f"- 如果是，我可以帮您预约校医务室\n"
-                f"- 如果不是，我为您提供健康知识"
-            )
+        # 询问是否需要预约校医务室
+        question = (
+            f"如果您的「{mentioned_symptom or '相关'}」症状持续或加重，建议及时到校医务室就诊检查。\n"
+            f"需不需要我帮您预约校医务室呢？\n"
+            f"[BUTTONS]需要,不需要\n"
+        )
         for char in question:
             yield char
 
@@ -253,10 +283,30 @@ class ConsultationProcessor:
         original_query = slots.get("pending_symptom_query", user_input)
 
         if reply_type == 'confirm':
-            # 用户确认有症状 → 建议预约医务室
-            logger.info(f"[症状确认] 用户确认有症状，建议预约: {original_query}")
+            # 用户确认有症状 → 流转到预约流程
+            logger.info(f"[症状确认] 用户确认有症状，流转到预约: {original_query}")
             self._reset_doctor_substate()
 
+            # 如果注入了预约 Agent，直接流转到预约流程
+            if self.appointment_agent is not None:
+                # 把用户症状作为预约背景传给预约 Agent
+                if self.conversation_id and self.memory:
+                    slots = self.memory.get_appointment_slots(self.conversation_id)
+                    slots['appointment_reason'] = original_query
+                    slots['symptoms'] = original_query
+                    self.memory.set_appointment_slots(self.conversation_id, slots)
+
+                # 通知用户即将开始预约
+                transition = "好的，我帮您预约校医务室。请告诉我您希望预约哪位医生和什么时间段。\n\n"
+                for char in transition:
+                    yield char
+
+                # 将控制权交给预约 Agent，继续收集预约信息
+                async for token in self.appointment_agent.run_stream(user_input=original_query):
+                    yield token
+                return
+
+            # 未注入预约 Agent 时的兜底
             reply = (
                 "了解，如果您有这方面的不适，建议及时到校医务室就诊检查。\n\n"
                 "需要我帮您预约校医务室吗？回复「预约」即可。"
@@ -265,13 +315,16 @@ class ConsultationProcessor:
                 yield char
 
         elif reply_type == 'deny':
-            # 用户否认 → 礼貌结束
+            # 用户否认 → 礼貌确认，并询问是否还有其他需要帮助
             self._reset_doctor_substate()
-            logger.info(f"[症状确认] 用户否认有症状，礼貌结束: {original_query}")
+            logger.info(f"[症状确认] 用户否认有症状，询问其他需求: {original_query}")
 
             reply = (
-                "好的，了解了。如果您后续有任何健康问题或需要预约医务室，随时找我。\n"
-                "祝您身体健康！"
+                "好的，明白了。如果之后有任何健康问题需要咨询，随时都可以问我。\n\n"
+                "请问还有其他我可以帮助您的吗？比如：\n"
+                "- 继续了解其他症状的健康知识\n"
+                "- 预约校医务室\n"
+                "- 咨询健康保健建议"
             )
             for char in reply:
                 yield char
@@ -310,8 +363,10 @@ class ConsultationProcessor:
         if knowledge_docs:
             prompt += "相关医学知识：\n"
             for doc in knowledge_docs:
-                content = doc.get('answer', doc.get('content', ''))
-                if content:
+                content = doc.get('answer', '')
+                if not content:
+                    content = doc.get('content', '')
+                if content and not self._is_query_text(content):
                     prompt += f"- {content}\n"
         prompt += (
             "\n请给出：\n"

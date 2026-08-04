@@ -2,7 +2,7 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from ..base.interfaces import BaseUserBehaviorRepository
 from ..base.session_manager import SessionManager
-from ..models import UserBehavior, UserPreference, UserRecommendation, Technician
+from ..models import ConsultationRecord, UserPreference, UserRecommendation, Technician
 
 
 class UserBehaviorRepository(BaseUserBehaviorRepository):
@@ -25,28 +25,30 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
         """
         self.session_manager = session_manager
 
-    def record_behavior(self, user_id: str, action_type: str, action_data: Optional[Dict[str, Any]] = None, 
+    def record_behavior(self, user_id: str, action_type: str, action_data: Optional[Dict[str, Any]] = None,
                        technician_id: Optional[int] = None, session_id: Optional[str] = None) -> int:
         """
-        记录用户行为
+        记录用户行为（适配 ConsultationRecord 模型）
 
         Args:
             user_id: 用户ID
-            action_type: 行为类型
-            action_data: 行为数据
-            technician_id: 医生ID
+            action_type: 行为类型（映射到 consultation_type）
+            action_data: 行为数据（包含症状/诊断等）
+            technician_id: 医生ID（映射到 doctor_id）
             session_id: 会话ID
-            
+
         Returns:
             新创建的行为记录ID
         """
         with self.session_manager.session_scope() as session:
-            behavior = UserBehavior(
+            behavior = ConsultationRecord(
                 user_id=user_id,
-                action_type=action_type,
-                action_data=action_data,
-                technician_id=technician_id,
-                session_id=session_id
+                doctor_id=technician_id,
+                consultation_type=action_type or 'initial',
+                symptoms=action_data.get('symptoms') if isinstance(action_data, dict) else None,
+                diagnosis=action_data.get('diagnosis') if isinstance(action_data, dict) else None,
+                session_id=session_id,
+                conversation_id=(action_data or {}).get('conversation_id'),
             )
             session.add(behavior)
             session.flush()
@@ -66,17 +68,17 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
             用户行为列表
         """
         with self.session_manager.session_scope() as session:
-            query = session.query(UserBehavior).filter(UserBehavior.user_id == user_id)
-            
+            query = session.query(ConsultationRecord).filter(ConsultationRecord.user_id == user_id)
+
             if action_type:
-                query = query.filter(UserBehavior.action_type == action_type)
-            
+                query = query.filter(ConsultationRecord.consultation_type == action_type)
+
             if days_back:
                 cutoff_date = datetime.utcnow() - timedelta(days=days_back)
-                query = query.filter(UserBehavior.created_at >= cutoff_date)
-            
-            behaviors = query.order_by(UserBehavior.created_at.desc()).all()
-            
+                query = query.filter(ConsultationRecord.created_at >= cutoff_date)
+
+            behaviors = query.order_by(ConsultationRecord.created_at.desc()).all()
+
             return [self._behavior_to_dict(behavior) for behavior in behaviors]
 
     def get_recent_behaviors(self, user_id: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -91,10 +93,10 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
             最近的行为记录列表
         """
         with self.session_manager.session_scope() as session:
-            behaviors = session.query(UserBehavior).filter(
-                UserBehavior.user_id == user_id
-            ).order_by(UserBehavior.created_at.desc()).limit(limit).all()
-            
+            behaviors = session.query(ConsultationRecord).filter(
+                ConsultationRecord.user_id == user_id
+            ).order_by(ConsultationRecord.created_at.desc()).limit(limit).all()
+
             return [self._behavior_to_dict(behavior) for behavior in behaviors]
 
     def update_user_preference(self, user_id: str, preference_type: str, preference_value: str) -> bool:
@@ -251,46 +253,46 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
         """
         with self.session_manager.session_scope() as session:
             cutoff_date = datetime.utcnow() - timedelta(days=days_back)
-            
+
             # 总行为数
-            total_behaviors = session.query(UserBehavior).filter(
-                UserBehavior.user_id == user_id,
-                UserBehavior.created_at >= cutoff_date
+            total_behaviors = session.query(ConsultationRecord).filter(
+                ConsultationRecord.user_id == user_id,
+                ConsultationRecord.created_at >= cutoff_date
             ).count()
-            
+
             # 预约次数
-            appointment_count = session.query(UserBehavior).filter(
-                UserBehavior.user_id == user_id,
-                UserBehavior.action_type == 'appointment',
-                UserBehavior.created_at >= cutoff_date
+            appointment_count = session.query(ConsultationRecord).filter(
+                ConsultationRecord.user_id == user_id,
+                ConsultationRecord.consultation_type == 'appointment',
+                ConsultationRecord.created_at >= cutoff_date
             ).count()
-            
+
             # 咨询次数
-            consultation_count = session.query(UserBehavior).filter(
-                UserBehavior.user_id == user_id,
-                UserBehavior.action_type == 'consultation',
-                UserBehavior.created_at >= cutoff_date
+            consultation_count = session.query(ConsultationRecord).filter(
+                ConsultationRecord.user_id == user_id,
+                ConsultationRecord.consultation_type == 'consultation',
+                ConsultationRecord.created_at >= cutoff_date
             ).count()
-            
+
             # 最喜欢的医生
             from sqlalchemy import func
             favorite_technician = session.query(
-                UserBehavior.technician_id,
+                ConsultationRecord.doctor_id,
                 Technician.name,
-                func.count(UserBehavior.technician_id).label('count')
+                func.count(ConsultationRecord.doctor_id).label('count')
             ).join(Technician).filter(
-                UserBehavior.user_id == user_id,
-                UserBehavior.action_type == 'appointment',
-                UserBehavior.created_at >= cutoff_date
-            ).group_by(UserBehavior.technician_id, Technician.name).order_by(
-                func.count(UserBehavior.technician_id).desc()
+                ConsultationRecord.user_id == user_id,
+                ConsultationRecord.consultation_type == 'appointment',
+                ConsultationRecord.created_at >= cutoff_date
+            ).group_by(ConsultationRecord.doctor_id, Technician.name).order_by(
+                func.count(ConsultationRecord.doctor_id).desc()
             ).first()
-            
+
             # 最后一次访问
-            last_visit = session.query(UserBehavior).filter(
-                UserBehavior.user_id == user_id,
-                UserBehavior.action_type == 'appointment'
-            ).order_by(UserBehavior.created_at.desc()).first()
+            last_visit = session.query(ConsultationRecord).filter(
+                ConsultationRecord.user_id == user_id,
+                ConsultationRecord.consultation_type == 'appointment'
+            ).order_by(ConsultationRecord.created_at.desc()).first()
             
             return {
                 'total_behaviors': total_behaviors,
@@ -320,15 +322,15 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
             from sqlalchemy import func
             
             popularity = session.query(
-                UserBehavior.technician_id,
+                ConsultationRecord.doctor_id,
                 Technician.name,
-                func.count(UserBehavior.technician_id).label('appointment_count'),
-                func.count(func.distinct(UserBehavior.user_id)).label('unique_users')
+                func.count(ConsultationRecord.doctor_id).label('appointment_count'),
+                func.count(func.distinct(ConsultationRecord.user_id)).label('unique_users')
             ).join(Technician).filter(
-                UserBehavior.action_type == 'appointment',
-                UserBehavior.created_at >= cutoff_date
-            ).group_by(UserBehavior.technician_id, Technician.name).order_by(
-                func.count(UserBehavior.technician_id).desc()
+                ConsultationRecord.consultation_type == 'appointment',
+                ConsultationRecord.created_at >= cutoff_date
+            ).group_by(ConsultationRecord.doctor_id, Technician.name).order_by(
+                func.count(ConsultationRecord.doctor_id).desc()
             ).all()
             
             return [
@@ -341,15 +343,15 @@ class UserBehaviorRepository(BaseUserBehaviorRepository):
                 for p in popularity
             ]
 
-    def _behavior_to_dict(self, behavior: UserBehavior) -> Dict[str, Any]:
-        """将行为对象转换为字典"""
+    def _behavior_to_dict(self, behavior: ConsultationRecord) -> Dict[str, Any]:
+        """将行为对象转换为字典（适配 ConsultationRecord 模型）"""
         return {
             'id': behavior.id,
             'user_id': behavior.user_id,
-            'action_type': behavior.action_type,
-            'action_data': behavior.action_data,
-            'technician_id': behavior.technician_id,
-            'technician_name': behavior.technician.name if behavior.technician else None,
+            'action_type': behavior.consultation_type,
+            'action_data': {'symptoms': behavior.symptoms, 'diagnosis': behavior.diagnosis},
+            'technician_id': behavior.doctor_id,
+            'technician_name': behavior.doctor.name if behavior.doctor else None,
             'session_id': behavior.session_id,
             'created_at': behavior.created_at
         }

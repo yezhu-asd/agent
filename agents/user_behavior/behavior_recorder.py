@@ -57,7 +57,7 @@ class BehaviorRecorder:
                     user_id="default_user",  # 默认用户ID
                     action_type=action_type,
                     action_data=action_data,
-                    technician_id=str(technician_id) if technician_id else None,
+                    doctor_id=str(technician_id) if technician_id else None,
                     session_id=session_id or "default_session"
                 )
                 return 1 if success else None

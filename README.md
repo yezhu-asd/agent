@@ -2,29 +2,39 @@
 
 本项目是一个面向校园医务室场景的多 Agent 智能问诊预约系统。系统基于 FastAPI + LangChain + RAG 构建，支持 Token 登录、会话隔离、症状问诊、风险识别、医生值班预约与健康知识问答。
 
-## 快速部署 Milvus 向量数据库
+## 快速部署（Zilliz Cloud 向量数据库）
 
-本项目支持本地 Milvus 向量数据库，内置 100万条医学问答向量数据。快速部署步骤：
+本项目使用 **Zilliz Cloud** 云托管向量数据库（Milvus 托管版），内置 100 万条医学问答向量数据（768 维，PCA 降维后）。无需本地安装 Docker Milvus。
+
+### 快速启动步骤
 
 ```bash
-# 1. 启动 Milvus 服务
-docker-compose -f milvus/docker-compose.milvus.yml up -d
-
-# 2. 等待 30 秒后，上传向量数据
-cd embedding
-python upload_embeddings.py
-cd ..
-
-# 3. 配置并启动应用
-cp .env.example .env
-# 编辑 .env，设置 VECTOR_DB_TYPE=milvus
+# 1. 安装依赖
 pip install -r requirements.txt
+
+# 2. 创建配置文件
+cp .env.example .env
+# 编辑 .env，填入你的 Zilliz Cloud 连接信息（URI / 用户名 / 密码）
+
+# 3. 启动应用
 python -m uvicorn app:app --reload
 ```
 
-**注意：** 首次启动若 Milvus 连接失败（如 `Fail connecting to server on localhost:19530`），可能是 etcd 尚未就绪 Milvus 就尝试连接了。执行 `docker restart milvus-standalone` 后等待 10 秒即可。
+### 准备向量数据（首次使用）
 
-**详细文档：** [milvus/MILVUS_DEPLOYMENT.md](milvus/MILVUS_DEPLOYMENT.md)
+向量数据需从网盘下载后解压到 `embedding/embedding_st/`（见 [13.3 大文件下载](#133-大文件下载与使用说明)），然后上传到 Zilliz Cloud：
+
+```bash
+cd embedding
+python upload_embeddings.py
+cd ..
+```
+
+上传完成后即可用于医学知识 RAG 检索。
+
+> **注意**：查询时需保持 `EMBEDDING_PROVIDER=local`，确保查询向量和存储向量使用同一 BGE-M3 模型 + PCA 降维，否则检索结果不相关。
+
+**本地 Docker Milvus 部署说明**（可选，已降级为附录）：[milvus/MILVUS_DEPLOYMENT.md](milvus/MILVUS_DEPLOYMENT.md)
 
 ## 1. 项目定位
 
@@ -84,7 +94,7 @@ DB Layer
 ## 5. 项目结构
 
 ```text
-smart-appointment-ai-agent/
+CampusCare/
 ├── app.py
 ├── README.md
 ├── requirements.txt
@@ -94,6 +104,9 @@ smart-appointment-ai-agent/
 ├── db/
 ├── config/
 ├── web/
+├── embedding/          # 向量数据与上传脚本
+├── models/             # BGE-M3 模型权重（gitignore 排除）
+├── milvus/             # 本地 Milvus 部署配置（可选）
 ├── data/
 └── tests/
 ```
@@ -114,22 +127,33 @@ pip install -r requirements.txt
 ```
 
 
-#### 6.4.1 启动 Milvus 服务
+#### 6.3 配置向量数据库（Zilliz Cloud）
 
-直接使用 Docker Compose:**
-```bash
-docker-compose -f milvus/docker-compose.milvus.yml up -d
+本项目使用 **Zilliz Cloud**（Milvus 云托管版）存储医学向量。需先注册 Zilliz Cloud 获取连接信息。
+
+##### 6.3.1 创建 Zilliz Cloud 集群
+
+1. 访问 https://cloud.zilliz.com 注册登录
+2. 创建集群（免费档 Sandbox 即可容纳 100 万条 768 维向量）
+3. 在集群详情页的 **Connect** 中获取：
+   - **Public Endpoint**（格式：`https://in03-xxx.serverless.ali-cn-hangzhou.cloud.zilliz.com.cn`）
+   - **用户名 / 密码**（Token）
+
+##### 6.3.2 配置 .env
+
+```env
+VECTOR_DB_TYPE=milvus
+MILVUS_URI=https://in03-xxx.serverless.ali-cn-hangzhou.cloud.zilliz.com.cn
+MILVUS_COLLECTION_NAME=campus_care_st
+MILVUS_USER=你的Zilliz用户名
+MILVUS_PASSWORD=你的Zilliz密码
 ```
 
-Milvus 服务包含：
-- Milvus Standalone: 核心向量数据库 (端口 19530)
-- etcd: 元数据存储
-- MinIO: 对象存储
-- Attu: Milvus 图形化管理界面 (http://localhost:8080)
+> **注意**：`MILVUS_URI` 必须是 Zilliz Cloud 的 **Public Endpoint**（https），不是本地 `http://localhost:19530`。
 
-#### 6.4.2 上传医学向量数据
+##### 6.3.3 上传医学向量数据
 
-确保 `embedding/embedding_st/` 目录下有向量数据文件，然后运行：
+确保 `embedding/embedding_st/` 目录下有向量数据文件（从网盘下载，见 [13.3](#133-大文件下载与使用说明)），然后运行：
 
 ```bash
 cd embedding
@@ -137,40 +161,19 @@ python upload_embeddings.py
 cd ..
 ```
 
-该脚本会上传约 100万条医学问答向量到 Milvus，预计耗时 1-2 小时。
+该脚本会上传约 100万条医学问答向量到 Zilliz Cloud，预计耗时 1-2 小时。
 
-#### 6.4.3 配置应用使用 Milvus
+##### 6.3.4 验证检索
 
-在 `.env` 文件中设置：
-
-```env
-VECTOR_DB_TYPE=milvus
-MILVUS_URI=http://localhost:19530
-MILVUS_COLLECTION_NAME=campus_medical_knowledge
-```
-
-#### 6.4.4 测试 Milvus 连接
+运行相关性测试，确认查询能返回相关医学内容：
 
 ```bash
-python E:\wu\xidian\job\java\agent\CampusCare\milvus\test_milvus.py
+python embedding/test_relevance.py
 ```
 
-#### 6.4.5 停止/清理 Milvus
+##### 6.3.5 本地 Docker Milvus（可选）
 
-```bash
-# 停止服务
-docker-compose -f docker-compose.milvus.yml stop
-
-# 完全删除（包括数据）
-docker-compose -f docker-compose.milvus.yml down -v
-rm -rf milvus_data/
-```
-# 重启Milvus 只用 docker-compose down（不带 -v），否则数据会被清空
-cd milvus
-docker-compose -f docker-compose.milvus.yml down 
-docker-compose -f docker-compose.milvus.yml up -d
-
-#### 详细文档：[milvus/MILVUS_DEPLOYMENT.md](milvus/MILVUS_DEPLOYMENT.md)
+如需本地自建 Milvus 而非使用云托管，见 [milvus/MILVUS_DEPLOYMENT.md](milvus/MILVUS_DEPLOYMENT.md)。注意本地 Milvus 资源有限，100 万条 768 维向量需要至少 16GB 内存。
 
 ## 7. 启动与访问
 
@@ -187,7 +190,6 @@ python -m uvicorn app:app --host 127.0.0.1 --port 8001 --reload
 - 健康检查：http://127.0.0.1:8001/health
 - Swagger：http://127.0.0.1:8001/docs
 - ReDoc：http://127.0.0.1:8001/redoc
-- Milvus 管理界面：http://localhost:8080
 
 ## 8. 认证流程
 
@@ -230,9 +232,10 @@ python -m pytest tests/test_token_integration.py -v --tb=short
 
 当前版本：`2.1.0-milvus`
 
-- 完成本地 Milvus 向量数据库集成
+- 向量数据库切换至 **Zilliz Cloud**（Milvus 云托管版）
+- 向量数据重新生成：100万条，FlagEmbedding BGE-M3 → PCA 降维至 768 维（解释方差 0.9968）
+- 检索链路：FlagEmbedding 查询向量 → PCA 降维 → Zilliz Milvus 检索 → RRF 融合（向量 + LIKE 关键词）
 - 支持 100万条医学问答向量检索
-- 完成 Pinecone → Milvus 配置切换
 - 版本 `2.0.0-medical` 功能：
   - 完成校园医务室语义迁移
   - 完成 Token 登录与会话并发隔离
@@ -322,14 +325,17 @@ git config --global --get https.proxy
 #### 其他已排除的内容
 
 - `.venv/`、`__pycache__/` — 虚拟环境，本地自动生成
-- `.env` — 密钥等敏感信息，需自行创建（参考 `.env.example`）
-- `bge-m3/` — 模型权重，从 models.7z 解压获得
+- `.env` — 密钥等敏感信息，需自行创建（参考 `.env.example`，已提供模板）
+- `models/bge-m3/` — 模型权重，从 models.7z 解压获得
+- `embedding/embedding_st/` — 向量数据，从 embedding_st.zip 解压获得
+- `embedding/embedding_merged/` — 原始未降维向量数据
 
 如果之前不小心提交了大文件到 Git 历史，需要用 `git filter-repo` 清除：
 
 ```bash
 pip install git-filter-repo
 git filter-repo --invert --path models/
+```
 
 ### 13.4 日常推送流程
 

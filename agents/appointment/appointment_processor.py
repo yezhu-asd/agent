@@ -29,6 +29,8 @@ from .doctor_finder import DoctorFinder
 from .message_builder import MessageBuilder
 from .appointment_database import AppointmentDatabase
 from langchain.agents import AgentExecutor, create_openai_tools_agent
+
+logger = logging.getLogger(__name__)
 from langchain.tools import BaseTool
 from langchain_core.prompts import ChatPromptTemplate
 
@@ -128,6 +130,16 @@ class AppointmentProcessor:
         """从解析数据更新预约历史"""
         if appointment_history.get('awaiting_confirmation'):
             return self._handle_recommendation_response(appointment_history, data)
+
+        # 时间校验：如果用户本轮输入没有明确时间信息，拒绝 LLM 编造的默认时间
+        user_raw = getattr(self, '_last_user_input', '') or ''
+        llm_time = data.get("start_time")
+        if llm_time and llm_time != "未知" and not InputParser.has_time_info(user_raw):
+            # 用户没提时间但 LLM 填了时间 → 判定为编造，忽略并标记缺失
+            logger.warning(f"[预约] 用户未明确时间，忽略 LLM 编造的 start_time: {llm_time}")
+            data["start_time"] = "未知"
+            # 同时把 info_complete 强制设为 False
+            data["info_complete"] = False
 
         for key in ["duration", "gender", "start_time", "project", "doctor_name"]:
             if data.get(key) and data[key] != "未知":

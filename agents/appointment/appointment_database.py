@@ -150,7 +150,7 @@ class AppointmentDatabase:
                 user_id="default_user",  # 统一使用default_user作为用户ID
                 action_type='appointment',
                 action_data=action_data,
-                technician_id=str(doctor_id),
+                doctor_id=str(doctor_id),
                 session_id=session_id
             )
             

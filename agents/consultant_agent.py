@@ -1,4 +1,5 @@
 import uuid
+import logging
 from config.model_provider import create_chat_model
 from services.conversation_memory_service import conversation_memory
 from .consultant import (
@@ -7,6 +8,8 @@ from .consultant import (
     ResponseGenerator,
     ConsultationProcessor
 )
+
+logger = logging.getLogger(__name__)
 
 
 class ConsultantAgent:
@@ -52,12 +55,22 @@ class ConsultantAgent:
         self.knowledge_retriever = KnowledgeRetriever()
         self.consultation_classifier = ConsultationClassifier(self.llm)
         self.response_generator = ResponseGenerator(self.llm)
+        # 预约 Agent（在确认需要预约时流转到预约流程）
+        try:
+            from agents.appointment_agent import AppointmentAgent
+            self.appointment_agent = AppointmentAgent(
+                session_id=session_id, user_id=user_id, conversation_id=conversation_id
+            )
+        except Exception as e:
+            logger.warning(f"[ConsultantAgent] 预约 Agent 初始化失败: {e}")
+            self.appointment_agent = None
         self.consultation_processor = ConsultationProcessor(
             self.knowledge_retriever,
             self.consultation_classifier,
             self.response_generator,
             conversation_memory,
-            self.conversation_id
+            self.conversation_id,
+            self.appointment_agent
         )
 
         # 如果有conversation_id，确保医疗槽位存在，同时设置user_id

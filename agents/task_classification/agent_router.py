@@ -115,11 +115,34 @@ class AgentRouter:
             str: 紧急处理响应
         """
         logger.warning(f"[紧急] 检测到危急情况: {task}")
-        
+
         # 更新状态为紧急
         if self.state_manager:
             self.state_manager.transition_to_emergency()
-        
+
+        # 记录风险事件（MySQL 持久化 + Redis 会话标记）
+        try:
+            user_id = self.state_manager.user_id if self.state_manager else None
+            conversation_id = self.state_manager.conversation_id if self.state_manager else None
+            # MySQL risk_events 表
+            from db.db_router import DatabaseRouter
+            db_router = DatabaseRouter()
+            if db_router.consultations:
+                event_id = db_router.consultations.record_risk_event(
+                    user_id=user_id or 'anonymous',
+                    risk_type='red_flag_symptom',
+                    description=f"后端分类器检测到高风险症状: {task[:200]}",
+                    risk_score=90.0
+                )
+                logger.warning(f"[紧急] 已记录风险事件 #{event_id}")
+            # Redis 风险标记
+            self.memory.add_risk_event(
+                conversation_id or str(self.conversation_id or ''),
+                {"type": "red_flag_symptom", "description": task[:200]}
+            )
+        except Exception as risk_e:
+            logger.error(f"[紧急] 记录风险事件失败: {risk_e}", exc_info=True)
+
         # 生成紧急提示
         yield "[ALERT][系统紧急]"
         yield "⚠️ 系统检测到可能的医学紧急情况！\n\n"
@@ -129,7 +152,7 @@ class AgentRouter:
         yield "3️⃣ 校医务室电话：请致电校园保卫部或学生工作处获取\n"
         yield "4️⃣ 详细症状：" + task + "\n\n"
         yield "不要延迟！在等待帮助期间，请采取必要的急救措施。"
-        
+
         if self.consultant_agent:
             yield "\n\n[医生提示]"
             try:
@@ -284,7 +307,26 @@ class AgentRouter:
         logger.debug(f"[状态] 当前状态: {current_state}")
         
         # 根据当前状态继续处理
-        if self.state_manager.is_in_appointment_flow():
+        if self.state_manager.is_emergency():
+            # 紧急模式：持续输出急救引导，不进入普通问诊/预约流程
+            # 用户表示已就医 → 退出紧急模式
+            exit_markers = ['我已就医', '已经就医', '看完医生', '去医院了', '已处理', '没事了', '已缓解', '我好些了', '情况稳定']
+            if any(m in task for m in exit_markers):
+                logger.info(f"[紧急模式] 用户表示已就医，退出紧急模式: {task}")
+                self.state_manager.reset_to_classify()
+                yield "[REPLY][医生]"
+                yield "好的，很高兴您已经就医处理。如果后续有任何健康问题，随时可以咨询我。祝您早日康复！"
+                return
+
+            logger.warning(f"[紧急模式] 会话处于紧急状态，持续急救引导: {task}")
+            yield "[ALERT][系统紧急]"
+            yield "🚨 您仍处于紧急咨询模式。请立即采取行动：\n\n"
+            yield "1️⃣ 立即拨打 120（急救电话）\n"
+            yield "2️⃣ 如在校园，立即前往校医务室\n"
+            yield "3️⃣ 保持镇静，等待医疗救助\n\n"
+            yield "如果您已就医或情况缓解，请回复「我已就医」以退出紧急模式。"
+
+        elif self.state_manager.is_in_appointment_flow():
             logger.debug("[状态] 继续预约流程")
             async for token in self.appointment_agent.run_stream(user_input=task):
                 yield token
