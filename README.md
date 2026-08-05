@@ -151,7 +151,20 @@ MILVUS_PASSWORD=你的Zilliz密码
 
 > **注意**：`MILVUS_URI` 必须是 Zilliz Cloud 的 **Public Endpoint**（https），不是本地 `http://localhost:19530`。
 
-##### 6.3.3 上传医学向量数据
+##### 6.3.3 配置 Langfuse 可观测性（可选）
+
+所有 LLM 调用（任务分类、预约解析、问诊建议、追问分析）自动记录到 Langfuse，便于调试和监控。
+
+```env
+# 注册：https://cloud.langfuse.com → Project Settings → API Keys
+LANGFUSE_PUBLIC_KEY=你的_Public_Key
+LANGFUSE_SECRET_KEY=你的_Secret_Key
+LANGFUSE_HOST=https://us.cloud.langfuse.com   # US 区域；EU 区域为 https://cloud.langfuse.com
+```
+
+> 未配置 key 或配置占位符时，应用**优雅降级**，不影响正常运行。接入点在 `config/model_provider.py` 统一挂载。
+
+##### 6.3.4 上传医学向量数据
 
 确保 `embedding/embedding_st/` 目录下有向量数据文件（从网盘下载，见 [13.3](#133-大文件下载与使用说明)），然后运行：
 
@@ -250,6 +263,7 @@ python -m pytest tests/test_token_integration.py -v --tb=short
   - 预约成功后值班页显示忙碌时间段、状态页显示"忙碌（有预约）"
 - **前端清新简约风重构**：薄荷绿医疗配色，替换原紫蓝高饱和渐变（聊天页/登录页/医生状态页/值班页统一）
 - **系统修正**：移除登录页演示验证码泄露、清理过时测试脚本、修复 GBK 编码导致的服务启动崩溃
+- **可观测性**：接入 **Langfuse** 云托管，所有 LLM 调用（分类/预约解析/问诊/追问）自动记录完整 trace（prompt、输出、token、耗时），`model_provider.py` 统一挂载，未配置 key 时优雅降级
 
 ### 历史版本
 

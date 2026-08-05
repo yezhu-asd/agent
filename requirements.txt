@@ -21,7 +21,9 @@ protobuf>=5.27.2,<6.0
 requests>=2.25.0
 langchain-experimental>=0.0.10
 pytest>=7.0.0
+pytest-asyncio>=0.23.0
 scikit-learn>=1.4
+langfuse>=4.14.0
 
 # ── FlagEmbedding BGE-M3 依赖（已验证可工作，2026-07-14）──
 # ⚠️ torch 版本必须匹配 GPU 架构：

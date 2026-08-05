@@ -7,6 +7,7 @@ DeepSeek, Zhipu, and OpenAI by switching environment variables.
 from __future__ import annotations
 
 import os
+import logging
 
 from dotenv import load_dotenv
 from langchain_openai import (
@@ -19,9 +20,49 @@ from pydantic import SecretStr
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 CHAT_PROVIDERS = {"openai", "qwen", "deepseek", "zhipu", "openai-compatible", "volcengine"}
 EMBEDDING_PROVIDERS = {"openai", "qwen", "zhipu", "openai-compatible", "volcengine"}
+
+
+# Langfuse 可观测性（全局单例）
+_LANGFUSE_HANDLER = None
+
+
+def get_langfuse_handler():
+    """获取 Langfuse CallbackHandler（未配置 key 时返回 None，优雅降级）"""
+    global _LANGFUSE_HANDLER
+    if _LANGFUSE_HANDLER is not None:
+        return _LANGFUSE_HANDLER
+    pk = _env("LANGFUSE_PUBLIC_KEY", "")
+    sk = _env("LANGFUSE_SECRET_KEY", "")
+    # 未配置或仍是占位符 → 跳过
+    if not pk or not sk or "你的" in pk or "你的" in sk:
+        logger.info("未配置有效的 LANGFUSE key，跳过可观测性集成")
+        _LANGFUSE_HANDLER = False
+        return None
+    try:
+        from langfuse.langchain import CallbackHandler
+        # langfuse 4.x 自动从 LANGFUSE_PUBLIC_KEY/SECRET_KEY/HOST 环境变量读取配置
+        _LANGFUSE_HANDLER = CallbackHandler()
+        logger.info("Langfuse 可观测性已启用")
+        return _LANGFUSE_HANDLER
+    except Exception as e:
+        logger.warning(f"Langfuse 初始化失败，跳过: {e}")
+        _LANGFUSE_HANDLER = False
+        return None
+
+
+def _attach_langfuse(model):
+    """为 LLM 实例绑定默认的 Langfuse callback（若已配置）"""
+    handler = get_langfuse_handler()
+    if handler:
+        try:
+            model.callbacks = [handler]
+        except Exception:
+            pass
+    return model
 
 
 def _env(name: str, default: str | None = None) -> str | None:
@@ -49,21 +90,23 @@ def create_chat_model(temperature: float = 0):
     provider = get_model_provider()
 
     if provider == "azure":
-        return AzureChatOpenAI(
+        model = AzureChatOpenAI(
             azure_deployment=_env("AZURE_OPENAI_DEPLOYMENT"),
             api_version=_env("AZURE_OPENAI_VERSION"),
             temperature=temperature,
             azure_endpoint=_env("AZURE_OPENAI_ENDPOINT"),
             api_key=SecretStr(_env("AZURE_OPENAI_API_KEY", "") or ""),
         )
+        return _attach_langfuse(model)
 
     if provider in CHAT_PROVIDERS:
-        return ChatOpenAI(
+        model = ChatOpenAI(
             model=_env("LLM_MODEL", "qwen-plus") or "qwen-plus",
             api_key=SecretStr(_env("LLM_API_KEY", "") or ""),
             base_url=_env("LLM_BASE_URL"),
             temperature=temperature,
         )
+        return _attach_langfuse(model)
 
     raise ValueError(
         f"Unsupported MODEL_PROVIDER={provider!r}. "
@@ -88,6 +131,7 @@ def create_embedding_model():
             api_version=_env("AZURE_OPENAI_EMBEDDING_VERSION", "2023-05-15"),
             azure_endpoint=_env("AZURE_OPENAI_ENDPOINT_EMBEDDING"),
         )
+        _attach_langfuse(instance)
         _EMBEDDING_CACHE[provider] = instance
         return instance
 
@@ -100,6 +144,7 @@ def create_embedding_model():
             # strings; disable token-id batching to send plain text.
             check_embedding_ctx_length=False,
         )
+        _attach_langfuse(instance)
         _EMBEDDING_CACHE[provider] = instance
         return instance
 
