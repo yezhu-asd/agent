@@ -320,6 +320,8 @@ git config --global --get https.proxy
 # └── ...
 ```
 
+> **注意**：解压路径需与 `.env` 中的 `LOCAL_EMBEDDING_MODEL` 一致（默认指向项目根目录的 `models/bge-m3/`）。
+
 > **验证**：运行 `python services/text_embedding.py`，若输出 embedding 向量且无报错，说明模型加载成功。
 
 #### 其他已排除的内容

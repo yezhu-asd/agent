@@ -38,11 +38,12 @@ milvus_data/
 # --- Large embedding data ---
 embedding/embedding_merged/
 embedding/checkpoints/
+embedding/embedding_st/
 *.npy
 !embedding/embed.py
-!embedding/merge_embeddings*.py
-!embedding/final_verification.py
-!embedding/upload_to_milvus.py
+!embedding/upload_embeddings.py
+!embedding/regenerate_and_upload.py
+!embedding/test_relevance.py
 
 # --- Logs ---
 *.log
