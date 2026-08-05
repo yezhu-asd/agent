@@ -12,54 +12,49 @@
             box-sizing: border-box;
         }
         
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f0fdf4 0%, #f1f5f9 100%);
             height: 100vh;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
         }
-        
-        .chat-container { 
+
+        .chat-container {
             width: 90%;
-            max-width: 800px; 
+            max-width: 800px;
             height: 90vh;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08), 0 2px 8px rgba(0,0,0,0.04);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid #e2e8f0;
         }
-        
+
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #ffffff;
             padding: 20px 30px;
-            color: white;
+            color: #0f172a;
             position: relative;
+            border-bottom: 1px solid #e2e8f0;
             overflow: hidden;
         }
-        
+
         .header::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 3s infinite;
+            top: 0;
+            right: 0;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
         }
-        
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
+
         .header-title {
             font-size: 24px;
             font-weight: 600;
@@ -67,11 +62,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            color: #0d9488;
         }
-        
+
         .header-subtitle {
             font-size: 14px;
-            opacity: 0.9;
+            color: #64748b;
         }
         
         .nav-bar {
@@ -84,47 +80,47 @@
             justify-content: center;
         }
         
-        .nav-btn { 
+        .nav-btn {
             padding: 8px 16px;
-            border-radius: 25px;
-            border: none;
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #475569;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
             gap: 5px;
         }
-        
-        .nav-btn:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+
+        .nav-btn:hover {
+            border-color: #10b981;
+            color: #0d9488;
+            background: #f0fdf4;
+            transform: translateY(-1px);
         }
         
         .chat-content {
             flex: 1;
             padding: 20px 30px;
             overflow-y: auto;
-            background: linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(248,250,252,0.9));
+            background: #f8fafc;
             scroll-behavior: smooth;
         }
-        
+
         .chat-content::-webkit-scrollbar {
             width: 6px;
         }
-        
+
         .chat-content::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.05);
+            background: rgba(0,0,0,0.04);
             border-radius: 3px;
         }
-        
+
         .chat-content::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: #cbd5e1;
             border-radius: 3px;
         }
         
@@ -158,13 +154,13 @@
         }
         
         .message.user .avatar {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #10b981;
             color: white;
         }
-        
+
         .message.bot .avatar {
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-            color: white;
+            background: #e5f5ee;
+            color: #0d9488;
         }
         
         .bubble { 
@@ -177,67 +173,68 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
-        .message.user .bubble { 
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white; 
+        .message.user .bubble {
+            background: #10b981;
+            color: white;
             border-bottom-right-radius: 5px;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
         }
-        
-        .message.bot .bubble { 
-            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-            color: #2c3e50; 
+
+        .message.bot .bubble {
+            background: #f8fafc;
+            color: #334155;
             border-bottom-left-radius: 5px;
-            border: 2px solid rgba(79, 172, 254, 0.2);
-            font-weight: 500;
+            border: 1px solid #e2e8f0;
+            font-weight: 400;
         }
         
         /* 机器人回复中的特殊文本样式 */
         .bot-reply {
-            color: #2c3e50;
-            font-weight: 600;
+            color: #334155;
+            font-weight: 500;
         }
-        
+
         .bot-thought {
-            color: #7f8c8d;
+            color: #94a3b8;
             font-style: italic;
             font-size: 14px;
             opacity: 0.8;
         }
-        
+
         .bot-success {
-            color: #27ae60;
-            font-weight: 700;
-            background: linear-gradient(135deg, #d5f4e6 0%, #e8f8f5 100%);
+            color: #0d9488;
+            font-weight: 600;
+            background: #f0fdf4;
             padding: 10px 15px;
             border-radius: 10px;
             margin: 5px 0;
-            border-left: 4px solid #27ae60;
+            border-left: 4px solid #10b981;
         }
-        
+
         .bot-error {
-            color: #e74c3c;
+            color: #dc2626;
             font-weight: 600;
-            background: linear-gradient(135deg, #fadbd8 0%, #f2d7d5 100%);
+            background: #fef2f2;
             padding: 10px 15px;
             border-radius: 10px;
             margin: 5px 0;
-            border-left: 4px solid #e74c3c;
+            border-left: 4px solid #ef4444;
         }
-        
+
         .bot-info {
-            color: #3498db;
+            color: #0369a1;
             font-weight: 600;
-            background: linear-gradient(135deg, #d6eaf8 0%, #eaf4fd 100%);
+            background: #f0f9ff;
             padding: 10px 15px;
             border-radius: 10px;
             margin: 5px 0;
-            border-left: 4px solid #3498db;
+            border-left: 4px solid #38bdf8;
         }
         
         .input-area {
             padding: 20px 30px;
-            background: rgba(255,255,255,0.95);
-            border-top: 1px solid rgba(0,0,0,0.05);
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
         }
         
         #chat-form { 
@@ -246,49 +243,51 @@
             align-items: center;
         }
         
-        #user-input { 
-            flex: 1; 
-            padding: 15px 20px; 
-            border-radius: 25px; 
-            border: 2px solid rgba(0,0,0,0.1); 
+        #user-input {
+            flex: 1;
+            padding: 15px 20px;
+            border-radius: 12px;
+            border: 1.5px solid #e2e8f0;
             font-size: 15px;
-            background: white;
-            transition: all 0.3s ease;
+            background: #f8fafc;
+            transition: all 0.2s ease;
             outline: none;
             resize: none;
             max-height: 120px;
             overflow-y: auto;
         }
-        
+
         #user-input:focus {
-            border-color: #4facfe;
-            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+            border-color: #10b981;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
-        
+
         #user-input::placeholder {
-            color: #999;
+            color: #94a3b8;
             opacity: 1;
         }
-        
-        #send-btn { 
-            padding: 15px 25px; 
-            border-radius: 25px; 
-            border: none; 
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white; 
+
+        #send-btn {
+            padding: 15px 25px;
+            border-radius: 12px;
+            border: none;
+            background: #10b981;
+            color: white;
             font-size: 15px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
             display: flex;
             align-items: center;
             gap: 8px;
         }
-        
+
         #send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4);
+            background: #0d9488;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         
         #send-btn:active {
@@ -314,7 +313,7 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: #10b981;
             animation: typing 1.4s infinite ease-in-out;
         }
         
@@ -326,10 +325,10 @@
             transition: all 0.2s ease;
         }
         .bot-quick-btn:hover {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%) !important;
+            background: #10b981 !important;
             color: white !important;
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         .bot-quick-btn:active {
             transform: translateY(0);
@@ -531,14 +530,6 @@
         
         <!-- 导航栏 -->
         <div class="nav-bar">
-            <button class="nav-btn" onclick="window.location.href='/user_behavior'">
-                <i class="fas fa-chart-line"></i>
-                用户行为分析
-            </button>
-            <button class="nav-btn" onclick="window.location.href='/knowledge'">
-                <i class="fas fa-database"></i>
-                知识库管理
-            </button>
             <button class="nav-btn" onclick="window.location.href='/technician'">
                 <i class="fas fa-users"></i>
                 医生状态
@@ -643,7 +634,9 @@
         if (header) {
             const logoutBtn = document.createElement('button');
             logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i> 登出';
-            logoutBtn.style.cssText = 'position: absolute; right: 30px; top: 20px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 14px;';
+            logoutBtn.style.cssText = 'position: absolute; right: 30px; top: 20px; background: #f0fdf4; color: #0d9488; border: 1px solid #10b981; padding: 8px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.2s;';
+            logoutBtn.onmouseover = () => { logoutBtn.style.background = '#10b981'; logoutBtn.style.color = '#ffffff'; };
+            logoutBtn.onmouseout = () => { logoutBtn.style.background = '#f0fdf4'; logoutBtn.style.color = '#0d9488'; };
             logoutBtn.onclick = logout;
             header.appendChild(logoutBtn);
         }
@@ -732,7 +725,7 @@
                 if (buttonLabels.length > 0) {
                     buttonsHtml = '<div class="bot-quick-buttons" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">'
                         + buttonLabels.map(label =>
-                            `<button class="bot-quick-btn" onclick="window.sendQuickReply(this.textContent)" style="padding:8px 16px;border-radius:20px;border:2px solid #4facfe;background:white;color:#4facfe;font-size:14px;cursor:pointer;transition:all 0.2s;hover {background:#4facfe;color:white;}">${label}</button>`
+                            `<button class="bot-quick-btn" onclick="window.sendQuickReply(this.textContent)" style="padding:8px 16px;border-radius:20px;border:2px solid #10b981;background:white;color:#10b981;font-size:14px;cursor:pointer;transition:all 0.2s;hover {background:#10b981;color:white;}">${label}</button>`
                         ).join('')
                         + '</div>';
                 }

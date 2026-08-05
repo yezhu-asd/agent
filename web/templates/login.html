@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f0fdf4 0%, #f1f5f9 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -23,11 +23,12 @@
 
         .login-container {
             background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08), 0 2px 8px rgba(0,0,0,0.04);
             width: 100%;
             max-width: 400px;
             padding: 40px 30px;
+            border: 1px solid #e2e8f0;
         }
 
         .login-header {
@@ -36,13 +37,13 @@
         }
 
         .login-header h1 {
-            color: #333;
+            color: #0d9488;
             font-size: 28px;
             margin-bottom: 10px;
         }
 
         .login-header p {
-            color: #888;
+            color: #64748b;
             font-size: 14px;
         }
 
@@ -53,7 +54,7 @@
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: #334155;
             font-size: 14px;
             font-weight: 500;
         }
@@ -68,24 +69,26 @@
         input[type="tel"] {
             flex: 1;
             padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.3s;
+            background: #f8fafc;
         }
 
         input[type="text"]:focus,
         input[type="password"]:focus,
         input[type="tel"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+            border-color: #10b981;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
         }
 
         button {
             padding: 12px 15px;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
@@ -93,33 +96,34 @@
         }
 
         .btn-get-code {
-            background: #f0f0f0;
-            color: #667eea;
+            background: #f0fdf4;
+            color: #0d9488;
             min-width: 120px;
             white-space: nowrap;
         }
 
         .btn-get-code:hover:not(:disabled) {
-            background: #e0e0e0;
+            background: #d1fae5;
         }
 
         .btn-get-code:disabled {
-            background: #ddd;
-            color: #999;
+            background: #e2e8f0;
+            color: #94a3b8;
             cursor: not-allowed;
         }
 
         .btn-login {
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #10b981;
             color: white;
             font-size: 16px;
             margin-top: 20px;
         }
 
         .btn-login:hover:not(:disabled) {
+            background: #0d9488;
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 20px rgba(16, 185, 129, 0.3);
         }
 
         .btn-login:disabled {

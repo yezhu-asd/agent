@@ -12,49 +12,44 @@
             box-sizing: border-box;
         }
         
-        body { 
+        body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #f0fdf4 0%, #f1f5f9 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
-        .container { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 20px; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.08), 0 2px 8px rgba(0,0,0,0.04);
             overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid #e2e8f0;
         }
-        
+
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #ffffff;
             padding: 30px;
-            color: white;
+            color: #0f172a;
             text-align: center;
             position: relative;
+            border-bottom: 1px solid #e2e8f0;
             overflow: hidden;
         }
-        
+
         .header::before {
             content: '';
             position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shimmer 3s infinite;
+            top: 0;
+            right: 0;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+            border-radius: 50%;
         }
-        
-        @keyframes shimmer {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-        }
-        
+
         .header h2 {
             font-size: 28px;
             font-weight: 600;
@@ -63,33 +58,35 @@
             align-items: center;
             justify-content: center;
             gap: 15px;
+            color: #0d9488;
         }
-        
+
         .header p {
             font-size: 16px;
-            opacity: 0.9;
+            color: #64748b;
         }
-        
+
         .content {
             padding: 30px;
         }
-        
+
         .schedule-info {
-            background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1));
+            background: #f0fdf4;
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 30px;
             text-align: center;
+            border: 1px solid #d1fae5;
         }
-        
+
         .schedule-info h3 {
-            color: #4facfe;
+            color: #0d9488;
             margin-bottom: 10px;
             font-size: 20px;
         }
-        
+
         .schedule-info p {
-            color: #666;
+            color: #64748b;
             margin-bottom: 10px;
         }
         
@@ -113,86 +110,85 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            background: #f87171;
         }
-        
+
         .timeline-container {
             background: white;
             border-radius: 15px;
             padding: 20px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.08);
             margin-bottom: 30px;
         }
-        
-        .timeline-row { 
-            display: flex; 
-            align-items: center; 
+
+        .timeline-row {
+            display: flex;
+            align-items: center;
             margin-bottom: 20px;
             padding: 15px;
-            background: rgba(248, 250, 252, 0.5);
+            background: #f8fafc;
             border-radius: 12px;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
-        
+
         .timeline-row:hover {
-            background: rgba(79, 172, 254, 0.05);
+            background: #f0fdf4;
             transform: translateX(5px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
-        
-        .info { 
-            width: 140px; 
+
+        .info {
+            width: 140px;
             text-align: left;
             padding-right: 20px;
         }
-        
+
         .doctor-name {
             font-size: 16px;
             font-weight: 600;
-            color: #333;
+            color: #334155;
             margin-bottom: 5px;
         }
-        
+
         .doctor-id {
             font-size: 12px;
-            color: #888;
-            background: rgba(79, 172, 254, 0.1);
+            color: #0d9488;
+            background: #d1fae5;
             padding: 2px 8px;
             border-radius: 10px;
             display: inline-block;
         }
-        
-        .timeline { 
-            position: relative; 
-            flex: 1; 
-            height: 40px; 
-            background: linear-gradient(to right, #f8f9fa, #e9ecef);
-            border-radius: 20px; 
+
+        .timeline {
+            position: relative;
+            flex: 1;
+            height: 40px;
+            background: linear-gradient(to right, #f8fafc, #e2e8f0);
+            border-radius: 20px;
             margin-left: 20px;
-            border: 2px solid rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
             overflow: hidden;
         }
-        
+
         .busy-block {
-            position: absolute; 
-            height: 100%; 
-            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            position: absolute;
+            height: 100%;
+            background: #f87171;
             border-radius: 18px;
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-size: 12px;
             font-weight: 600;
-            box-shadow: 0 2px 8px rgba(250, 112, 154, 0.3);
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
+            transition: all 0.2s ease;
         }
-        
+
         .busy-block:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.5);
+            box-shadow: 0 4px 15px rgba(248, 113, 113, 0.5);
         }
-        
+
         .time-markers {
             position: absolute;
             top: 0;
@@ -201,7 +197,7 @@
             bottom: 0;
             pointer-events: none;
         }
-        
+
         .time-marker {
             position: absolute;
             top: 0;
@@ -209,27 +205,43 @@
             width: 1px;
             background: rgba(0,0,0,0.1);
         }
-        
-        .nav-btn { 
+
+        .time-marker.half-hour {
+            background: rgba(0,0,0,0.05);
+        }
+
+        .time-marker-label {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #94a3b8;
+            white-space: nowrap;
+            margin-top: 2px;
+        }
+
+        .nav-btn {
             padding: 12px 30px;
-            border-radius: 25px;
+            border-radius: 12px;
             border: none;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: #10b981;
             color: white;
             font-size: 16px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
             display: inline-flex;
             align-items: center;
             gap: 10px;
             text-decoration: none;
         }
-        
-        .nav-btn:hover { 
+
+        .nav-btn:hover {
+            background: #0d9488;
             transform: translateY(-2px);
-            box-shadow: 0 12px 35px rgba(79, 172, 254, 0.4);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
         
         .nav-btn:active {
@@ -300,14 +312,14 @@
             <div class="schedule-info">
                 <h3><i class="fas fa-clock"></i> 营业时间说明</h3>
                 <p>今日日期：{{ current_date }}（北京时间）</p>
-                <p>工作时间：12:00 - 22:00 （共10小时）</p>
+                <p>工作时间：周一至周五 8:00 - 18:00，周六日 9:00 - 17:00</p>
                 <p>红色区域表示已预约时间段，空白区域为可预约时间</p>
             </div>
-            
+
             <div class="time-legend">
                 <div class="legend-item">
                     <i class="fas fa-clock"></i>
-                    <span>12:00 开始营业</span>
+                    <span>8:00 开始营业</span>
                 </div>
                 <div class="legend-item">
                     <span class="legend-dot"></span>
@@ -315,7 +327,7 @@
                 </div>
                 <div class="legend-item">
                     <i class="fas fa-moon"></i>
-                    <span>22:00 结束营业</span>
+                    <span>18:00 结束营业</span>
                 </div>
             </div>
             
@@ -328,11 +340,21 @@
                             <div class="doctor-id">ID: {{ doctor.id }}</div>
                         </div>
                         <div class="timeline">
-                            <!-- 时间刻度标记 -->
+                            <!-- 时间刻度标记：每半小时一格，整点显示时间 -->
                             <div class="time-markers">
-                                {% for hour in range(12, 23) %}
-                                    {% set left = ((hour - 12) / 10) * 100 %}
-                                    <div class="time-marker" style="left: {{ left }}%;"></div>
+                                {% set base_minutes = 8 * 60 %}
+                                {% set total_minutes = (18 - 8) * 60 %}
+                                {% for minute_offset in range(0, total_minutes + 1, 30) %}
+                                    {% set left = (minute_offset / total_minutes) * 100 %}
+                                    {% set hour = (base_minutes + minute_offset) // 60 %}
+                                    {% set minute = (base_minutes + minute_offset) % 60 %}
+                                    {% if minute == 0 %}
+                                        <div class="time-marker" style="left: {{ left }}%;">
+                                            <span class="time-marker-label">{{ "%02d" % hour }}:00</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="time-marker half-hour" style="left: {{ left }}%;"></div>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
 
@@ -342,12 +364,12 @@
                             {% set end = period.end.split(':') %}
                             {% set start_minutes = (start[0]|int) * 60 + (start[1]|int) %}
                             {% set end_minutes = (end[0]|int) * 60 + (end[1]|int) %}
-                            {% set base_minutes = 12 * 60 %}
-                            {% set total_minutes = (22 - 12) * 60 %}
+                            {% set base_minutes = 8 * 60 %}
+                            {% set total_minutes = (18 - 8) * 60 %}
                             {% set left = ((start_minutes - base_minutes) / total_minutes) * 100 %}
                             {% set width = ((end_minutes - start_minutes) / total_minutes) * 100 %}
                             <div class="busy-block" style="left:{{ left }}%;width:{{ width }}%;" title="预约时间: {{ period.start }} - {{ period.end }}">
-                                <i class="fas fa-spa"></i>
+                                <i class="fas fa-clock"></i>
                                 {{ period.start }}~{{ period.end }}
                             </div>
                             {% endfor %}
