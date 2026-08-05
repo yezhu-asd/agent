@@ -271,7 +271,7 @@ async def list_all_doctors(
 async def get_all_technicians():
     """兼容函数: 获取所有医生列表 (别名)"""
     from api.appointment import MOCK_DOCTORS
-    from agents.appointment.appointment_database import busy_periods_dict
+    from datetime import datetime
     # 建立医生姓名 → 数据库整数 ID 的映射
     db_id_by_name = {}
     try:
@@ -280,21 +280,23 @@ async def get_all_technicians():
         for db_doc in apt_service.get_all_doctors():
             db_id_by_name[str(db_doc.get("name"))] = str(db_doc.get("id"))
     except Exception:
-        pass
+        apt_service = None
+
+    # 查询今日所有医生的预约，标记忙碌状态
+    busy_doctor_ids = set()
+    if apt_service:
+        try:
+            today = datetime.now().date()
+            for db_name, db_id in db_id_by_name.items():
+                appointments = apt_service.get_doctor_appointments_by_date(db_id, today)
+                if appointments:
+                    busy_doctor_ids.add(db_name)
+        except Exception:
+            pass
 
     # 转成 technician.html 模板需要的字段结构
     doctors = []
     for d in MOCK_DOCTORS:
-        # 判断医生是否有预约（忙碌状态）：同时检查字符串ID和数据库整数ID
-        has_busy = False
-        candidate_keys = [str(d.get("doctor_id"))]
-        db_id = db_id_by_name.get(d.get("name"))
-        if db_id:
-            candidate_keys.append(db_id)
-        for key in candidate_keys:
-            if busy_periods_dict.get(key):
-                has_busy = True
-                break
         doctors.append({
             "id": d.get("doctor_id"),
             "name": d.get("name"),
@@ -303,7 +305,7 @@ async def get_all_technicians():
             "strength": d.get("specialty"),  # 模板的"力气/倾向"列显示科室
             "education": d.get("education"),
             "years_of_experience": d.get("years_of_experience"),
-            "status": "busy" if has_busy else "available",
+            "status": "busy" if d.get("name") in busy_doctor_ids else "available",
         })
     return doctors
 
@@ -313,67 +315,55 @@ async def get_all_technicians_schedule_today():
 
     数据来源：
     1. 医生基础信息来自 MOCK_DOCTORS（与预约流程同源）
-    2. 忙碌时间段来自预约系统的 busy_periods_dict（预约成功后记录）
-    3. 同时查询数据库排班/预约，作为补充
+    2. 忙碌时间段从 MySQL appointments 表查询（预约持久化，重启不丢失）
     """
     try:
         from api.appointment import MOCK_DOCTORS
-        from agents.appointment.appointment_database import busy_periods_dict
-        from datetime import datetime, timedelta
+        from datetime import datetime
 
         today_str = datetime.now().strftime("%Y-%m-%d")
+        today = datetime.now().date()
         schedules_data = []
+
+        # 建立 MOCK doctor_id → 数据库整数 ID 的映射
+        db_id_map = {}
+        try:
+            from services.appointment_service import AppointmentService
+            apt_service = AppointmentService()
+            for db_doc in apt_service.get_all_doctors():
+                db_id_map[str(db_doc.get("id"))] = db_doc.get("name")
+        except Exception:
+            apt_service = None
 
         for doctor in MOCK_DOCTORS:
             doctor_id = doctor.get("doctor_id")
             doctor_name = doctor.get("name")
             specialty = doctor.get("specialty", "")
 
-            # 收集忙碌时间段：内存缓存 + 数据库预约
+            # 收集忙碌时间段：从 MySQL appointments 表查询
             busy_periods = []
 
-            # 0) 建立 MOCK doctor_id → 数据库整数 ID 的映射
-            db_id_map = {}
-            try:
-                from services.appointment_service import AppointmentService
-                apt_service = AppointmentService()
-                db_doctors = apt_service.get_all_doctors()
-                for db_doc in db_doctors:
-                    db_id_map[str(db_doc.get("id"))] = db_doc.get("name")
-            except Exception:
-                pass
-
-            # 1) 内存缓存中的预约忙闲（尝试字符串 ID 和数据库整数 ID）
-            candidate_keys = [str(doctor_id)]
-            # 通过医生姓名反向找数据库整数 ID
-            for db_id, db_name in db_id_map.items():
+            # 找到该医生的数据库整数 ID
+            db_id = None
+            for db_id_key, db_name in db_id_map.items():
                 if db_name == doctor_name:
-                    candidate_keys.append(db_id)
-            for key in candidate_keys:
-                periods = busy_periods_dict.get(key, [])
-                for p in periods:
-                    busy_periods.append({
-                        "start": p.get("start", ""),
-                        "end": p.get("end", ""),
-                    })
+                    db_id = db_id_key
+                    break
 
-            # 2) 数据库查询该医生今日的预约
-            try:
-                today = datetime.now().date()
-                for key in candidate_keys:
-                    db_schedules = apt_service.get_doctor_schedules(key, today)
-                    for sched in db_schedules:
-                        if sched.get("status") == "busy":
-                            start = sched.get("start_time", "")
-                            end = sched.get("end_time", "")
-                            busy_periods.append({
-                                "start": start.strftime("%H:%M") if hasattr(start, 'strftime') else str(start),
-                                "end": end.strftime("%H:%M") if hasattr(end, 'strftime') else str(end),
-                            })
-            except Exception:
-                pass  # 数据库查询失败不影响展示
+            if db_id and apt_service:
+                try:
+                    appointments = apt_service.get_doctor_appointments_by_date(db_id, today)
+                    for apt in appointments:
+                        start = apt.get("start_time")
+                        end = apt.get("end_time")
+                        busy_periods.append({
+                            "start": start.strftime("%H:%M") if hasattr(start, 'strftime') else str(start),
+                            "end": end.strftime("%H:%M") if hasattr(end, 'strftime') else str(end),
+                        })
+                except Exception:
+                    pass  # 数据库查询失败不影响展示
 
-            # 3) 去重（按时间段）
+            # 去重（按时间段）
             seen = set()
             unique_periods = []
             for p in busy_periods:

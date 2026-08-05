@@ -478,6 +478,40 @@ class DoctorRepository(BaseDoctorRepository, BaseScheduleRepository):
                 'is_expired': appointment.end_time < now
             }
 
+    def get_doctor_appointments_by_date(self, doctor_id, date) -> List[Dict[str, Any]]:
+        """查询某医生在指定日期的所有预约时间段（用于值班页展示忙碌时段）
+
+        Args:
+            doctor_id: 医生ID（数据库整数ID）
+            date: 日期（date 对象）
+
+        Returns:
+            预约时间段列表 [{start_time, end_time}, ...]
+        """
+        from datetime import datetime, time as dtime
+        try:
+            day_start = datetime.combine(date, dtime.min)
+            day_end = datetime.combine(date, dtime.max)
+            with self.session_manager.session_scope() as session:
+                appointments = session.query(Appointment).filter(
+                    Appointment.doctor_id == doctor_id,
+                    Appointment.status == 'confirmed',
+                    Appointment.start_time >= day_start,
+                    Appointment.start_time <= day_end,
+                ).all()
+                return [
+                    {
+                        'start_time': a.start_time,
+                        'end_time': a.end_time,
+                    }
+                    for a in appointments
+                ]
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"查询医生预约失败: {e}")
+            return []
+
     def cancel_appointment_txn(self, appointment_id: int, schedule_id: int) -> bool:
         """
         事务性取消预约：同时更新 appointments 表和 doctor_schedules 表

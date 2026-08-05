@@ -125,6 +125,14 @@ class AppointmentService:
             logger.error(f"获取医生排班信息失败：{e}")
             return []
 
+    def get_doctor_appointments_by_date(self, doctor_id: int, date) -> List[Dict[str, Any]]:
+        """查询医生在指定日期的所有预约（用于值班页显示忙碌时段）"""
+        try:
+            return self.technician_repo.get_doctor_appointments_by_date(doctor_id, date)
+        except Exception as e:
+            logger.error(f"获取医生预约失败：{e}")
+            return []
+
     def is_doctor_available(self, doctor_id: int, start_time: datetime, end_time: datetime) -> bool:
         """检查医生是否可用"""
         try:

@@ -46,34 +46,34 @@ class TestTokenIntegration:
             consultant_agent=consultant_agent
         )
         
-        # 初始状态
-        assert agent.user_id is None, "初始 user_id 应该为 None"
-        assert agent.conversation_id is None, "初始 conversation_id 应该为 None"
-        
+        # 初始状态（不传 user_id 时使用默认值）
+        assert agent.user_id == "anonymous", "初始 user_id 应为默认值 anonymous"
+        assert agent.conversation_id is not None, "初始 conversation_id 应自动生成"
+
         # 执行
         user_id = "13800138000"
         conversation_id = "conv_789012"
         agent.set_user_context(user_id, conversation_id)
-        
+
         # 验证
         assert agent.user_id == user_id, "user_id 应该被正确设置"
         assert agent.conversation_id == conversation_id, "conversation_id 应该被正确设置"
-    
+
     def test_should_maintain_backward_compatibility(self):
         """测试：应该保持向后兼容性（不传入 user_id 和 conversation_id）"""
         # 准备
         appointment_agent = AppointmentAgent()
         consultant_agent = ConsultantAgent()
-        
+
         # 执行 - 不传入 user_id 和 conversation_id
         agent = TaskClassificationAgent(
             appointment_agent=appointment_agent,
             consultant_agent=consultant_agent
         )
-        
-        # 验证
-        assert agent.user_id is None, "如果不传入，user_id 应该为 None"
-        assert agent.conversation_id is None, "如果不传入，conversation_id 应该为 None"
+
+        # 验证（使用默认值，不报错）
+        assert agent.user_id == "anonymous", "如果不传入，user_id 使用默认值 anonymous"
+        assert agent.conversation_id is not None, "如果不传入，conversation_id 自动生成"
         # 应该能正常调用 reset_conversation
         try:
             agent.reset_conversation()

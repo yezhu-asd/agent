@@ -5,11 +5,44 @@
 """
 #作用：将历史对话与用户输入合并为prompts，提取有效信息为json，再转换为字典结构，提交给后续流程；
 import json
-from typing import Dict, Any, Generator
+import logging
+from typing import Dict, Any, Generator, Optional, List
 from langchain.prompts import PromptTemplate
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, AIMessage
+from pydantic import BaseModel, Field, BeforeValidator
+from typing_extensions import Annotated
+
+logger = logging.getLogger(__name__)
+
+
+def _parse_missing_info(value):
+    """把 LLM 返回的字符串或列表规范化为列表"""
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        # 兼容 "start_time, project" 或 "['start_time', 'project']" 格式
+        s = value.strip().strip("[]").replace("'", "").replace('"', "")
+        return [item.strip() for item in s.split(",") if item.strip()]
+    return []
+
+
+# 预约信息提取的结构化输出模型（GLM JSON Mode）
+class AppointmentData(BaseModel):
+    """预约信息提取结果"""
+    gender: str = Field(default="未知", description="医生性别：男/女/未知")
+    start_time: str = Field(default="未知", description="预约时间 YYYY-MM-DD HH:MM，用户没提则为未知")
+    duration: str = Field(default="未知", description="就诊时长，如30分钟")
+    project: str = Field(default="未知", description="就诊科室，如内科/外科/未知")
+    preference: str = Field(default="未知", description="用户倾向，无则填无")
+    technician_name: str = Field(default="未知", description="指定医生姓名，没指定则为未知")
+    confirmation: str = Field(default="未知", description="对推荐医生确认问题的回复")
+    cancel_intent: bool = Field(default=False, description="是否要取消预约")
+    cancel_confirmation: str = Field(default="未知", description="对取消确认问题的回复")
+    info_complete: bool = Field(default=False, description="必需信息是否齐全")
+    unrelated: bool = Field(default=False, description="是否与预约无关")
+    missing_info: Annotated[list, BeforeValidator(_parse_missing_info)] = Field(default_factory=list, description="缺少的关键信息")
 
 
 class InputParser:
@@ -74,12 +107,15 @@ class InputParser:
                 "5. 只有当所有必需信息都不是'未知'时，info_complete才为true\n"
                 "6. duration（时长）不是必需字段，系统默认30分钟\n"
                 "7. 如果用户的问题和预约无关，请将unrelated设为true\n"
+                "8. 硬性规则：如果用户没有明确提到某个字段信息，该字段必须填\"未知\"，严禁编造或推断。"
+                "特别是 start_time：只有用户明确说了时间（如\"明天上午9点\"\"下午3点\"\"周三10点\"）才填具体时间，"
+                "否则必须填\"未知\"。gender/project/technician_name 同理，用户没说就填\"未知\"。\n"
                 "再次强调：只输出纯JSON，不要有任何代码块标记或其他文字。"
             )
         )
     
     def parse_stream(self, user_input: str, chat_history: InMemoryChatMessageHistory) -> Generator[str, None, str]:
-        """流式解析用户输入"""
+        """流式解析用户输入（使用 GLM JSON Mode 结构化输出）"""
         # 添加用户消息到历史
         chat_history.add_message(HumanMessage(content=user_input))
 
@@ -94,32 +130,41 @@ class InputParser:
         current_date = time_config.current_date_str()
         current_datetime = time_config.current_datetime_str()
 
-        # 流式调用LLM（注入实时时间）
-        response_stream = self.chain.stream({
-            "current_date": current_date,
-            "current_datetime": current_datetime,
-            "history": history_str,
-            "user_input": user_input,
-        })
-        ai_content = ""
-        
-        for chunk in response_stream:
-            token = chunk.content if hasattr(chunk, "content") else str(chunk)
-            ai_content += token
-            yield token
-        
-        # 添加AI回复到历史
-        chat_history.add_message(AIMessage(content=ai_content))
-        return ai_content
-    
+        # 构造 Prompt 文本（结构化 LLM 需要字符串输入）
+        prompt_text = self.prompt.format(
+            current_date=current_date,
+            current_datetime=current_datetime,
+            history=history_str,
+            user_input=user_input,
+        )
+
+        # 用结构化输出约束 LLM（GLM JSON Mode），保证返回合法 JSON
+        structured_llm = self.llm.with_structured_output(AppointmentData, method="json_schema")
+        response = structured_llm.invoke(prompt_text)
+
+        # 把结构化结果转为 dict 存起来，供 parse_data 使用
+        self._last_structured = response.model_dump() if hasattr(response, 'model_dump') else dict(response)
+
+        # 为兼容流式调用方，把 JSON 文本作为内容流式返回
+        json_text = json.dumps(self._last_structured, ensure_ascii=False)
+        chat_history.add_message(AIMessage(content=json_text))
+        yield json_text
+        return json_text
+
     def parse_data(self, ai_content: str) -> Dict[str, Any]:
-        """解析AI返回的JSON数据，兼容 markdown 包裹"""
+        """解析AI返回的数据（优先用结构化输出结果，兼容旧的非结构化流程）"""
+        # 如果本次调用使用了结构化输出，直接用它
+        if hasattr(self, '_last_structured') and self._last_structured:
+            data = self._last_structured
+            self._last_structured = None  # 用完清空
+            return data
+
+        # 旧流程：解析 JSON 文本
         try:
             content = ai_content.strip()
-            # 去除可能的 ```json ... ``` 包裹
             if content.startswith("```"):
-                content = content.split("\n", 1)[-1]  # 去掉第一行 ```json
-                content = content.rsplit("```", 1)[0]  # 去掉末尾 ```
+                content = content.split("\n", 1)[-1]
+                content = content.rsplit("```", 1)[0]
                 content = content.strip()
             return json.loads(content)
         except (json.JSONDecodeError, Exception):
