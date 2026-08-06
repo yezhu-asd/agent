@@ -143,7 +143,13 @@ class InputParser:
         response = structured_llm.invoke(prompt_text)
 
         # 把结构化结果转为 dict 存起来，供 parse_data 使用
-        self._last_structured = response.model_dump() if hasattr(response, 'model_dump') else dict(response)
+        data = response.model_dump() if hasattr(response, 'model_dump') else dict(response)
+
+        # 后端防臆造校验：用户没明确提时间/科室/性别时，即使 LLM 填了值也强制置"未知"
+        if data.get("start_time") and data["start_time"] != "未知":
+            if not InputParser.has_time_info(user_input):
+                data["start_time"] = "未知"
+        self._last_structured = data
 
         # 为兼容流式调用方，把 JSON 文本作为内容流式返回
         json_text = json.dumps(self._last_structured, ensure_ascii=False)

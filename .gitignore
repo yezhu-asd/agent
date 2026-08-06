@@ -27,6 +27,7 @@ ENV/
 
 # --- Data & runtime artifacts ---
 data/
+!benchmark/data/
 milvus_data/
 *.sqlite
 *.sqlite3
@@ -82,3 +83,6 @@ models/bge-m3/
 *.7z
 *.tar.gz
 *.zip
+
+# --- Benchmark 报告（时间戳文件不断累积，不提交） ---
+benchmark/reports/

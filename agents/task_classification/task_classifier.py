@@ -31,13 +31,18 @@ class TaskClassifier:
 
         # 定义红旗症状关键词（需要紧急升级）
         self.red_flag_keywords = {
-            '胸痛', '左胸痛', '右胸痛', '心梗', '心脏',
-            '呼吸困难', '喘不上气', '窒息', '晕倒', '昏迷',
-            '大出血', '严重出血', '失血', '休克',
+            '胸痛', '左胸痛', '右胸痛', '心梗', '心脏', '心绞痛',
+            '呼吸困难', '喘不上气', '窒息', '晕倒', '昏迷', '失去知觉', '失去意识',
+            '大出血', '严重出血', '失血', '休克', '持续出血', '流血不止',
+            '吐血', '咳血', '便血', '尿血', '大便出血',
             '脑中风', '中风', '卒中', '瘫痪',
-            '割腕', '自杀', '服毒', '中毒', '吞药',
-            '尖锐物扎', '刀砍', '枪伤', '烧伤', '触电',
-            '意外', '创伤', '外伤', '骨折', '脱臼'
+            '割腕', '自杀', '服毒', '中毒', '吞药', '药物中毒',
+            '尖锐物扎', '刀砍', '枪伤', '烧伤', '大面积烧伤', '触电',
+            '意外', '创伤', '外伤', '骨折', '脱臼',
+            '剧烈头痛', '头炸裂', '头痛欲裂', '胸骨剧痛', '胸骨痛',
+            '持续高烧', '烧到40度', '39度以上', '高烧不退', '体温40度', '体温39度',
+            '腹部剧痛', '急性腹痛', '严重腹痛',
+            '过敏性休克', '严重过敏'
         }
 
         # 预约关键词
@@ -125,26 +130,57 @@ class TaskClassifier:
         """
         基于关键词快速分类
 
+        优先级：appointment > doctor(症状描述) > faq > chat
+
         Returns:
-            Optional[str]: 'appointment'/'faq'/'doctor' 或 None（匹配不上）
+            Optional[str]: 'appointment'/'doctor'/'faq'/'chat' 或 None（匹配不上走LLM）
         """
         task_lower = task.lower()
 
-        # 预约类（优先级最高）
+        # 预约类（最高优先级）
         for keyword in self.appointment_keywords:
             if keyword in task_lower:
                 return 'appointment'
+
+        # 医生问诊类：用户描述自身症状（优先级高于FAQ，
+        # 因为"我咳嗽/发烧/疼"是报告个人症状，比"健康知识咨询"更紧急）
+        # 第一人称症状（"我"+ 症状词）
+        first_person = ['我', '本人']
+        has_first_person = any(p in task_lower for p in first_person)
+        # 症状指示词（涵盖生理症状 + 情绪/饮食/作息）
+        symptom_indicators = [
+            '疼', '痛', '不舒服', '难受', '痒', '肿', '麻', '酸', '晕', '吐', '泻', '烧', '热',
+            '咳', '痰', '喘', '失眠', '睡不着', '乏力', '没精神', '过敏', '红疹', '出血', '发炎',
+            '情绪', '心情', '焦虑', '抑郁', '压力', '紧张',
+            '吃', '辣', '凉', '胃', '肚子', '头痛', '头晕', '恶心'
+        ]
+        # 明确症状程度/时间修饰（说明是已发生的具体症状，而非泛泛健康知识）
+        # 注意：不要用"了"（太宽泛，"感冒了"也是泛指），只用强程度/时长词
+        severity_markers = ['厉害', '严重', '一直', '反复', '特别', '很疼', '很痛', '两个月', '很久', '好多天', '不断', '整天', '每天晚上', '睡不着觉']
+        for indicator in symptom_indicators:
+            if indicator in task_lower:
+                # 第一人称 + 症状词 → 明确是 doctor
+                if has_first_person:
+                    return 'doctor'
+                # 非疑问句式 → 症状描述 → doctor
+                is_query_style = any(q in task_lower for q in [
+                    '怎么办', '怎么预防', '怎么治', '能吃吗', '怎么处理', '有什么危害',
+                    '要注意什么', '能喝吗', '能恢复吗', '怎么调理', '怎么退烧',
+                    '怎么缓解', '怎么回事', '为什么', '是什么原因'
+                ])
+                if not is_query_style:
+                    return 'doctor'
+                # 疑问句式 + 强程度/时长修饰 → 已发生的具体症状 → doctor
+                # （如"咳嗽两个月了怎么办"，区别于"感冒怎么预防"）
+                if is_query_style and any(s in task_lower for s in severity_markers):
+                    return 'doctor'
+                # 纯疑问句式 + 无强修饰（如"感冒能喝枸杞茶吗"）→ 落到 FAQ
+                break
 
         # FAQ/健康咨询类
         for keyword in self.faq_keywords:
             if keyword in task_lower:
                 return 'faq'
-
-        # 医生问诊类：用户描述症状（包含痛、疼、不舒服、难受等词）
-        symptom_indicators = ['疼', '痛', '不舒服', '难受', '痒', '肿', '麻', '酸', '晕', '吐', '泻', '烧', '热', '冷', '酸']
-        for indicator in symptom_indicators:
-            if indicator in task_lower:
-                return 'doctor'
 
         # 关键词匹配不上
         return None

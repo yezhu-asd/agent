@@ -1,0 +1,14 @@
+[
+  {"query": "明天上午9点，男医生，内科", "expected_project": "内科", "expected_gender": "男", "has_time": true},
+  {"query": "女医生，皮肤科", "expected_project": "皮肤科", "expected_gender": "女", "has_time": false},
+  {"query": "帮我预约耳鼻喉科", "expected_project": "耳鼻喉科", "expected_gender": null, "has_time": false},
+  {"query": "下午3点，外科", "expected_project": "外科", "expected_gender": null, "has_time": true},
+  {"query": "我要预约", "expected_project": null, "expected_gender": null, "has_time": false},
+  {"query": "男医生，眼科，明天下午", "expected_project": "眼科", "expected_gender": "男", "has_time": true},
+  {"query": "口腔科女医生", "expected_project": "口腔科", "expected_gender": "女", "has_time": false},
+  {"query": "预约儿科", "expected_project": "儿科", "expected_gender": null, "has_time": false},
+  {"query": "我想挂中医科", "expected_project": "中医科", "expected_gender": null, "has_time": false},
+  {"query": "妇科男医生今天下午", "expected_project": "妇科", "expected_gender": "男", "has_time": true},
+  {"query": "明天上午十点全科", "expected_project": "全科", "expected_gender": null, "has_time": true},
+  {"query": "预约骨科", "expected_project": "骨科", "expected_gender": null, "has_time": false}
+]
