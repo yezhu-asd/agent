@@ -105,9 +105,8 @@ CampusCare/
 ├── config/
 ├── web/
 ├── embedding/          # 向量数据与上传脚本
-├── models/             # BGE-M3 模型权重（gitignore 排除）
 ├── milvus/             # 本地 Milvus 部署配置（可选）
-├── data/
+├── benchmark/          # Agent Benchmark 评估框架
 └── tests/
 ```
 
@@ -235,6 +234,36 @@ python -m pytest -v --tb=short
 python -m pytest tests/test_token_integration.py -v --tb=short
 ```
 
+### 10.1 Agent Benchmark
+
+提供 4 项自动化基准评估 Agent 能力，报告保存到 `benchmark/reports/`（不提交 git）：
+
+```bash
+# 运行全部 benchmark
+python benchmark/run_all.py
+
+# 单独运行某项
+python benchmark/bench_classify.py      # 任务分类 + 红旗识别 + 问诊质量
+python benchmark/bench_appointment.py   # 预约流程（字段提取/臆造率）
+python benchmark/bench_followup.py      # 多轮追问
+python benchmark/bench_retrieval.py     # RAG 检索
+
+# 快速模式（只跑分类+预约）
+python benchmark/run_all.py --quick
+```
+
+| Benchmark | 核心指标 | 结果 |
+|-----------|---------|------|
+| 任务分类 | 5 类分类准确率（doctor/appointment/faq/emergency/chat） | 95% |
+| 红旗识别 | 紧急症状识别准确率 | 100% |
+| 预约流程 | 字段解析准确率 / 臆造率 | 100% / 0% |
+| 多轮追问 | 轮次合理率（1-3轮）/ 收敛率 | 100% / 80% |
+| RAG 检索 | 相关命中率 | 100% |
+
+**命名规则**：
+- 脚本：`benchmark/bench_<类型>.py`
+- 报告：`benchmark/reports/<类型>_<时间戳>.md`（人类可读）+ `.json`（结构化数据）
+
 ## 11. 医疗安全约束
 
 - 系统只做辅助建议，不做最终医疗诊断。
@@ -264,6 +293,7 @@ python -m pytest tests/test_token_integration.py -v --tb=short
 - **前端清新简约风重构**：薄荷绿医疗配色，替换原紫蓝高饱和渐变（聊天页/登录页/医生状态页/值班页统一）
 - **系统修正**：移除登录页演示验证码泄露、清理过时测试脚本、修复 GBK 编码导致的服务启动崩溃
 - **可观测性**：接入 **Langfuse** 云托管，所有 LLM 调用（分类/预约解析/问诊/追问）自动记录完整 trace（prompt、输出、token、耗时），`model_provider.py` 统一挂载，未配置 key 时优雅降级
+- **Benchmark 评估框架**：4 项自动化基准（分类准确率 95%、红旗识别 100%、预约解析 100%/臆造率 0%、RAG 检索 100%），`benchmark/` 目录，报告统一命名保存
 
 ### 历史版本
 
