@@ -71,7 +71,57 @@ class InputParser:
             if marker in user_input:
                 return True
         return False
-    
+
+    @staticmethod
+    def resolve_relative_time(user_input: str) -> Optional[str]:
+        """解析相对时间段 → 具体时间（YYYY-MM-DD HH:MM）
+
+        处理"明天下午/今天下午/上午/晚上"等只有时间段没有具体时刻的输入。
+        返回确定性默认时刻；无法解析返回 None。
+        """
+        from datetime import datetime, timedelta
+        import re
+
+        now = datetime.now()
+        text = user_input
+
+        # 日期基准：今天/明天/后天/本周X
+        base = None
+        if '后天' in text:
+            base = now + timedelta(days=2)
+        elif '明天' in text or '明早' in text or '明晚' in text:
+            base = now + timedelta(days=1)
+        elif '今天' in text:
+            base = now
+        elif '本周' in text or '周' in text:
+            # 默认本周内，用今天兜底
+            base = now
+        else:
+            base = now
+
+        # 时间段默认时刻：上午10点 / 下午15点 / 中午12点 / 晚上19点 / 早上9点
+        hour = None
+        if '晚上' in text or '明晚' in text or '今晚' in text:
+            hour = 19
+        elif '下午' in text:
+            hour = 15
+        elif '中午' in text:
+            hour = 12
+        elif '上午' in text or '早上' in text or '明早' in text:
+            hour = 10
+        elif '凌晨' in text:
+            hour = 1
+
+        if hour is None:
+            return None
+
+        # 注意：只有时间段词但没有具体"点"才用默认时刻
+        # 如果已经有具体时刻（如"下午3点"），由 LLM 处理，不覆盖
+        if re.search(r'\d+\s*点', text):
+            return None
+
+        resolved = base.replace(hour=hour, minute=0, second=0, microsecond=0)
+        return resolved.strftime("%Y-%m-%d %H:%M")
     def _create_prompt_template(self) -> PromptTemplate:
         """创建预约信息提取的Prompt模板（时间相关字段为占位符，每次调用时动态注入）"""
         return PromptTemplate(
@@ -138,8 +188,13 @@ class InputParser:
             user_input=user_input,
         )
 
-        # 用结构化输出约束 LLM（GLM JSON Mode），保证返回合法 JSON
-        structured_llm = self.llm.with_structured_output(AppointmentData, method="json_schema")
+        # 用结构化输出约束 LLM，保证返回合法 JSON
+        # 智谱 GLM 支持 json_schema；DeepSeek 只支持 function_calling（思考模式已关闭）
+        method = "json_schema"
+        model_name = (getattr(self.llm, "model_name", "") or "").lower()
+        if "deepseek" in model_name:
+            method = "function_calling"
+        structured_llm = self.llm.with_structured_output(AppointmentData, method=method)
         response = structured_llm.invoke(prompt_text)
 
         # 把结构化结果转为 dict 存起来，供 parse_data 使用
@@ -149,6 +204,14 @@ class InputParser:
         if data.get("start_time") and data["start_time"] != "未知":
             if not InputParser.has_time_info(user_input):
                 data["start_time"] = "未知"
+
+        # 时间段默认值：用户提了"明天下午/今天下午/上午"等时间段词但没具体时刻，
+        # LLM 可能标"未知"。此时按确定性规则补默认时刻（上午10点/下午15点/晚上19点）
+        if (data.get("start_time") in (None, "未知")) and InputParser.has_time_info(user_input):
+            resolved = InputParser.resolve_relative_time(user_input)
+            if resolved:
+                data["start_time"] = resolved
+
         self._last_structured = data
 
         # 为兼容流式调用方，把 JSON 文本作为内容流式返回

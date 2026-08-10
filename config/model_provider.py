@@ -100,11 +100,18 @@ def create_chat_model(temperature: float = 0):
         return _attach_langfuse(model)
 
     if provider in CHAT_PROVIDERS:
+        model_name = _env("LLM_MODEL", "qwen-plus") or "qwen-plus"
+        model_kwargs = {}
+        # DeepSeek-V4 思考模式默认开启，但思考模式下不支持 JSON Mode / tool_choice
+        # 显式关闭思考模式，保证结构化输出（预约解析等）可用
+        if model_name.startswith("deepseek"):
+            model_kwargs["extra_body"] = {"thinking": {"type": "disabled"}}
         model = ChatOpenAI(
-            model=_env("LLM_MODEL", "qwen-plus") or "qwen-plus",
+            model=model_name,
             api_key=SecretStr(_env("LLM_API_KEY", "") or ""),
             base_url=_env("LLM_BASE_URL"),
             temperature=temperature,
+            model_kwargs=model_kwargs,
         )
         return _attach_langfuse(model)
 
