@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="CampusCare · 校园医务室多 Agent 智能问诊预约系统 —— 项目分享展示页">
+<title>CampusCare · 校园医务室智能问诊预约助手</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root{
+    --blue:#3E9BD6;          /* 淡蓝主强调 */
+    --blue-deep:#2C7CB8;
+    --blue-soft:#E3F2FD;     /* 淡蓝浅底 */
+    --teal:#2FB6AC;          /* 淡青强调 */
+    --teal-deep:#239A92;
+    --teal-soft:#E0F7F5;     /* 淡青浅底 */
+    --ink:#1F3A5F;           /* 标题 */
+    --body:#5A7184;          /* 正文 */
+    --bg:#F4FAFD;            /* 页面极淡蓝青底 */
+    --card:#FFFFFF;
+    --line:#E2EEF6;
+    --radius:16px;
+    --shadow:0 6px 24px rgba(43,110,160,.08);
+    --shadow-hover:0 14px 34px rgba(43,110,160,.14);
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Segoe UI",-apple-system,BlinkMacSystemFont,sans-serif;
+    background:var(--bg);
+    color:var(--body);
+    line-height:1.75;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  code,pre,kbd{font-family:"SF Mono","JetBrains Mono","Cascadia Code",Consolas,Menlo,monospace}
+
+  /* 滚动进度条 */
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:120;
+    background:linear-gradient(90deg,var(--blue),var(--teal));border-radius:0 3px 3px 0}
+
+  /* 吸顶导航 */
+  .nav{position:sticky;top:0;z-index:110;backdrop-filter:blur(10px);
+    background:rgba(255,255,255,.82);border-bottom:1px solid var(--line)}
+  .nav-inner{max-width:1120px;margin:0 auto;padding:0 24px;height:62px;
+    display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;color:var(--ink);font-size:16px;white-space:nowrap}
+  .brand .logo{width:34px;height:34px;border-radius:10px;flex:none;
+    display:grid;place-items:center;color:#fff;font-size:17px;
+    background:linear-gradient(135deg,var(--blue),var(--teal));
+    box-shadow:0 4px 12px rgba(62,155,214,.35)}
+  .nav-links{display:flex;gap:4px;list-style:none;flex-wrap:wrap}
+  .nav-links a{display:block;padding:7px 14px;border-radius:999px;font-size:14px;color:var(--body);transition:.2s}
+  .nav-links a:hover{background:var(--blue-soft);color:var(--blue-deep)}
+  .nav-tag{font-size:12px;font-weight:600;letter-spacing:.3px;color:#fff;padding:4px 10px;
+    border-radius:999px;background:linear-gradient(135deg,var(--blue),var(--teal));white-space:nowrap}
+
+  /* 通用容器 */
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+  section{padding:76px 0}
+  .sec-head{text-align:center;max-width:760px;margin:0 auto 52px}
+  .sec-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--teal-deep);
+    background:var(--teal-soft);padding:5px 14px;border-radius:999px;margin-bottom:16px;letter-spacing:1px}
+  .sec-eyebrow i{font-size:12px}
+  .sec-head h2{font-size:32px;color:var(--ink);font-weight:800;letter-spacing:.5px}
+  .sec-head p{margin-top:12px;font-size:16px}
+  .sec-head .en{font-size:13px;color:#8FA9BF;font-family:"Segoe UI",sans-serif;letter-spacing:1px;margin-top:4px}
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative;overflow:hidden;
+    background:
+      radial-gradient(900px 420px at 12% -10%,#E3F7FB 0%,transparent 60%),
+      radial-gradient(800px 460px at 92% 12%,#E0F7F5 0%,transparent 55%),
+      linear-gradient(180deg,#FFFFFF 0%,var(--bg) 100%);}
+  .blob{position:absolute;border-radius:50%;filter:blur(2px);pointer-events:none;opacity:.55}
+  .blob.b1{width:340px;height:340px;background:radial-gradient(circle,#CFEAF7,transparent 70%);top:-80px;right:-60px}
+  .blob.b2{width:260px;height:260px;background:radial-gradient(circle,#D3F2EE,transparent 70%);bottom:6%;left:-70px}
+  .hero-inner{position:relative;max-width:1120px;margin:0 auto;padding:92px 24px 40px;text-align:center}
+  .hero .chiprow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:26px}
+  .hero .chip{font-size:13px;font-weight:600;padding:6px 15px;border-radius:999px;letter-spacing:.4px}
+  .hero .chip.c1{color:var(--blue-deep);background:var(--blue-soft)}
+  .hero .chip.c2{color:var(--teal-deep);background:var(--teal-soft)}
+  .hero h1{font-size:clamp(34px,5vw,54px);color:var(--ink);font-weight:800;line-height:1.25;letter-spacing:.5px}
+  .hero h1 .grad{background:linear-gradient(90deg,var(--blue) 10%,var(--teal) 90%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero .sub-en{margin-top:12px;font-size:clamp(14px,2vw,18px);font-weight:600;color:#6FA3C6;
+    letter-spacing:2.5px;font-family:"Segoe UI",sans-serif}
+  .hero .tagline{max-width:720px;margin:22px auto 0;font-size:17px;color:var(--body)}
+  .hero .cta{display:flex;gap:14px;justify-content:center;margin-top:34px;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:12px 24px;border-radius:999px;
+    font-size:15px;font-weight:600;transition:.22s;border:1px solid transparent}
+  .btn.primary{color:#fff;background:linear-gradient(135deg,var(--blue),var(--teal));
+    box-shadow:0 8px 20px rgba(47,182,172,.32)}
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(62,155,214,.35)}
+  .btn.ghost{color:var(--ink);background:#fff;border-color:var(--line)}
+  .btn.ghost:hover{border-color:var(--blue);color:var(--blue-deep);transform:translateY(-2px)}
+  .hero-scroll{margin-top:46px;color:#9FB6CA;font-size:20px;animation:bob 2s infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+
+  /* ---------- 数据看板 ---------- */
+  .stats{padding:0 0 76px;margin-top:-10px}
+  .stat-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 14px;text-align:center;box-shadow:var(--shadow);transition:.25s}
+  .stat:hover{transform:translateY(-5px);box-shadow:var(--shadow-hover)}
+  .stat .num{font-size:clamp(24px,2.6vw,34px);font-weight:800;letter-spacing:.5px;line-height:1.2}
+  .stat.s-blue .num{color:var(--blue-deep)}
+  .stat.s-teal .num{color:var(--teal-deep)}
+  .stat .lbl{margin-top:6px;font-size:13px;color:var(--body)}
+  .stat .sub{font-size:11px;color:#9FB6CA;margin-top:2px}
+
+  /* ---------- 通用卡片淡入 ---------- */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media (prefers-reduced-motion:reduce){
+    .reveal{opacity:1;transform:none;transition:none}
+    .hero-scroll{animation:none}
+    html{scroll-behavior:auto}
+  }
+
+  /* ---------- 项目定位 ---------- */
+  .mission{display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:stretch}
+  .mission .lead-card{background:linear-gradient(160deg,#FFFFFF,#EFF8FD);
+    border:1px solid var(--line);border-radius:var(--radius);padding:34px 34px;box-shadow:var(--shadow)}
+  .mission h3{font-size:21px;color:var(--ink);display:flex;align-items:center;gap:10px;margin-bottom:18px}
+  .mission h3 i{color:var(--blue)}
+  .mission ul.chain{list-style:none;display:grid;gap:12px;margin-top:6px}
+  .mission ul.chain li{display:flex;align-items:flex-start;gap:12px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;padding:13px 16px}
+  .mission ul.chain li .dot{flex:none;width:26px;height:26px;border-radius:50%;color:#fff;font-size:12px;
+    display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--teal));margin-top:2px}
+  .mission ul.chain li b{color:var(--ink);font-weight:600}
+  .guard{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:28px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:18px;justify-content:center}
+  .guard .g-head{font-size:15px;color:var(--ink);font-weight:700;display:flex;align-items:center;gap:9px}
+  .guard .g-head i{color:var(--teal)}
+  .guard-item{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;border-radius:12px;background:var(--teal-soft)}
+  .guard-item i{color:var(--teal-deep);margin-top:4px;flex:none}
+  .guard-item div small{display:block;color:var(--body);font-size:13px;margin-top:2px}
+
+  /* ---------- 核心能力九宫格 ---------- */
+  .feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .feat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px 24px;
+    box-shadow:var(--shadow);transition:.28s;position:relative;overflow:hidden}
+  .feat::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;
+    background:linear-gradient(90deg,var(--blue),var(--teal));opacity:0;transition:.28s}
+  .feat:hover{transform:translateY(-6px);box-shadow:var(--shadow-hover)}
+  .feat:hover::before{opacity:1}
+  .feat .ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:22px;
+    color:var(--blue-deep);background:var(--blue-soft);margin-bottom:16px}
+  .feat:nth-child(even) .ic{color:var(--teal-deep);background:var(--teal-soft)}
+  .feat h4{font-size:17px;color:var(--ink);font-weight:700}
+  .feat .en{font-size:12px;color:#8FA9BF;font-weight:600;letter-spacing:.6px;margin:3px 0 10px;display:block}
+  .feat p{font-size:14px}
+
+  /* ---------- 多 Agent 流程 ---------- */
+  .flow-wrap{display:grid;grid-template-columns:1.12fr .88fr;gap:28px;align-items:start}
+  .pipeline{display:flex;flex-direction:column;gap:0}
+  .pipe-node{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;box-shadow:var(--shadow);display:flex;gap:15px;align-items:center}
+  .pipe-node .st{flex:none;width:38px;height:38px;border-radius:11px;color:#fff;font-size:15px;font-weight:700;
+    display:grid;place-items:center;background:linear-gradient(135deg,var(--blue),var(--teal))}
+  .pipe-node .tt b{color:var(--ink);font-size:15px}
+  .pipe-node .tt span{display:block;font-size:13px;color:var(--body);margin-top:2px}
+  .pipe-arrow{width:2px;height:22px;margin-left:34px;background:linear-gradient(var(--teal),var(--blue));opacity:.45}
+  .pipe-fork{margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding-left:4px}
+  .fork-card{background:linear-gradient(180deg,#fff,#EFF9FB);border:1px solid var(--line);border-radius:12px;
+    padding:14px 14px;text-align:center}
+  .fork-card i{font-size:20px;color:var(--teal-deep)}
+  .fork-card b{display:block;color:var(--ink);font-size:14px;margin:7px 0 3px}
+  .fork-card small{font-size:12px;line-height:1.5;display:block}
+
+  /* 对话样张 */
+  .demo{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+  .demo-head{background:linear-gradient(135deg,#E9F6FD,#E4F6F3);padding:13px 18px;display:flex;
+    align-items:center;gap:11px;border-bottom:1px solid var(--line)}
+  .demo-head .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--teal));
+    color:#fff;display:grid;place-items:center;font-size:15px}
+  .demo-head b{color:var(--ink);font-size:14px}
+  .demo-head small{display:block;color:#8FA9BF;font-size:11px}
+  .demo-head .live{margin-left:auto;font-size:11px;font-weight:700;color:var(--teal-deep);
+    background:var(--teal-soft);padding:3px 10px;border-radius:999px}
+  .demo-body{padding:20px 18px;display:flex;flex-direction:column;gap:13px;flex:1}
+  .bub{max-width:92%;padding:11px 15px;border-radius:16px;font-size:13.5px;line-height:1.7}
+  .bub.user{align-self:flex-end;background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff;
+    border-bottom-right-radius:4px}
+  .bub.thought{align-self:flex-start;background:var(--blue-soft);color:#4a6b88;font-style:italic;
+    border-bottom-left-radius:4px}
+  .bub.thought i{color:var(--blue-deep);margin-right:5px}
+  .bub.reply{align-self:flex-start;background:#F4F9FC;border:1px solid var(--line);
+    border-bottom-left-radius:4px;color:var(--ink)}
+  .bub.reply b{color:var(--blue-deep)}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;align-self:flex-start}
+  .chips .pc{font-size:12.5px;font-weight:600;padding:7px 14px;border-radius:999px;cursor:default;
+    background:#fff;border:1.5px solid var(--teal);color:var(--teal-deep)}
+  .chips .pc.blue{border-color:var(--blue);color:var(--blue-deep)}
+  .typing{display:inline-flex;gap:4px;padding:14px 16px;align-items:center;align-self:flex-start;
+    background:#F4F9FC;border:1px solid var(--line);border-radius:16px;border-bottom-left-radius:4px}
+  .typing span{width:7px;height:7px;border-radius:50%;background:var(--blue);animation:blink 1.2s infinite}
+  .typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+  .demo-note{font-size:11.5px;color:#9FB6CA;text-align:center;padding:10px 14px;border-top:1px dashed var(--line)}
+
+  /* 分类说明小卡 */
+  .class-grid{display:grid;gap:10px;margin-top:26px}
+  .class-item{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:11px 14px}
+  .class-item .tag{flex:none;font-size:12px;font-weight:700;color:#fff;padding:3px 10px;border-radius:999px}
+  .tag.d{background:var(--blue)} .tag.a{background:#5B8DEF} .tag.f{background:var(--teal)}
+  .tag.e{background:#F28C7A} .tag.c{background:#9BAEC0}
+  .class-item .desc{font-size:13px}
+  .class-item .eg{display:block;font-size:12px;color:#9FB6CA;margin-top:1px}
+
+  /* ---------- 架构 ---------- */
+  .arch{max-width:820px;margin:0 auto}
+  .layer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 22px;
+    box-shadow:var(--shadow);position:relative;display:flex;align-items:center;gap:16px}
+  .layer .rank{flex:none;width:46px;height:46px;border-radius:13px;color:#fff;font-weight:800;font-size:17px;
+    display:grid;place-items:center}
+  .layer .meta{flex:1;min-width:0}
+  .layer .meta h4{font-size:16px;color:var(--ink);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .layer .meta h4 small{font-size:11px;font-weight:600;color:#8FA9BF;letter-spacing:1px}
+  .layer .meta p{font-size:13px;color:var(--body);margin-top:2px}
+  .layer .files{display:flex;gap:6px;flex-wrap:wrap;margin-top:7px}
+  .layer .files code{font-size:11.5px;background:var(--blue-soft);color:var(--blue-deep);
+    padding:2px 8px;border-radius:6px}
+  .layer.s5 .files code,.layer.s5 .rank{background:linear-gradient(135deg,var(--blue),#5B8DEF)}
+  .layer.s4 .rank{background:linear-gradient(135deg,#5B8DEF,var(--blue))}
+  .layer.s3 .rank{background:linear-gradient(135deg,var(--blue),var(--teal))}
+  .layer.s2 .rank{background:linear-gradient(135deg,var(--teal),var(--blue))}
+  .layer.s1 .rank{background:linear-gradient(135deg,var(--teal-deep),var(--teal))}
+  .arch-arrow{text-align:center;color:var(--teal);font-size:15px;padding:5px 0;line-height:1}
+  .arch-rule{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:22px;
+    background:var(--teal-soft);border:1px solid #C6EDE9;color:var(--teal-deep);
+    font-size:13.5px;font-weight:600;padding:12px 18px;border-radius:999px}
+  .arch-rule i{font-size:16px}
+  .arch-note{margin-top:12px;text-align:center;font-size:12.5px;color:#9FB6CA}
+
+  /* ---------- 工程亮点 ---------- */
+  .hl-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .hl{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+    box-shadow:var(--shadow);display:flex;flex-direction:column;transition:.28s}
+  .hl:hover{transform:translateY(-6px);box-shadow:var(--shadow-hover)}
+  .hl .top{padding:22px 22px 8px;display:flex;align-items:center;gap:13px}
+  .hl .top .ic{width:46px;height:46px;border-radius:13px;flex:none;display:grid;place-items:center;
+    font-size:19px;color:#fff;background:linear-gradient(135deg,var(--blue),var(--teal));
+    box-shadow:0 6px 14px rgba(62,155,214,.3)}
+  .hl .top h4{color:var(--ink);font-size:16.5px;line-height:1.4}
+  .hl .top small{display:block;font-size:11.5px;color:#8FA9BF;font-weight:600;letter-spacing:.6px}
+  .hl .body{padding:6px 22px 16px;font-size:13.5px;flex:1}
+  .hl pre{background:#F0F6FB;border:1px solid #DEEBF4;border-radius:10px;padding:12px 14px;font-size:12px;
+    line-height:1.7;color:#35627f;overflow-x:auto;margin:12px 0 4px;white-space:pre-wrap}
+  .hl pre .k{color:var(--teal-deep);font-weight:600}
+  .hl pre .c{color:#9FB6CA;font-style:italic}
+  .hl ul.pts{list-style:none;margin-top:10px;display:grid;gap:7px}
+  .hl ul.pts li{display:flex;gap:9px;font-size:13px}
+  .hl ul.pts li i{color:var(--teal);font-size:12px;margin-top:5px;flex:none}
+
+  /* ---------- 技术栈 ---------- */
+  .stack-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+  .stack{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px 24px;
+    box-shadow:var(--shadow)}
+  .stack h4{color:var(--ink);font-size:16px;display:flex;align-items:center;gap:10px;margin-bottom:4px}
+  .stack h4 i{color:var(--blue)}
+  .stack h4 span{font-size:12px;color:#8FA9BF;font-weight:600;letter-spacing:.6px;margin-left:2px}
+  .stack .desc{font-size:13px;margin-bottom:14px}
+  .pill-row{display:flex;flex-wrap:wrap;gap:9px}
+  .pill{font-size:13px;font-weight:600;padding:6px 14px;border-radius:999px;background:var(--blue-soft);
+    color:var(--blue-deep)}
+  .pill.t{background:var(--teal-soft);color:var(--teal-deep)}
+
+  /* ---------- 时间线 ---------- */
+  .timeline{max-width:760px;margin:0 auto;position:relative;padding-left:8px}
+  .timeline::before{content:"";position:absolute;left:118px;top:8px;bottom:8px;width:3px;border-radius:3px;
+    background:linear-gradient(180deg,var(--blue),var(--teal));opacity:.35}
+  .tl-item{position:relative;display:flex;gap:26px;margin-bottom:18px}
+  .tl-ver{flex:none;width:100px;text-align:right;padding-top:16px}
+  .tl-ver .v{font-size:14px;font-weight:800;color:var(--teal-deep);background:var(--teal-soft);
+    padding:3px 10px;border-radius:999px;display:inline-block}
+  .tl-ver .cur .v{background:linear-gradient(135deg,var(--blue),var(--teal));color:#fff}
+  .tl-dot{flex:none;width:22px;height:22px;border-radius:50%;background:#fff;border:5px solid var(--blue);
+    margin-top:20px;z-index:1;box-shadow:0 0 0 5px #E3F2FD}
+  .tl-item.cur .tl-dot{border-color:var(--teal);box-shadow:0 0 0 5px #E0F7F5}
+  .tl-card{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 20px;
+    box-shadow:var(--shadow)}
+  .tl-card b{color:var(--ink);font-size:15.5px}
+  .tl-card .en{font-size:12px;color:#8FA9BF;letter-spacing:.6px;font-weight:600}
+  .tl-card ul{margin-top:7px;padding-left:18px}
+  .tl-card li{font-size:13.5px}
+  .tl-card li::marker{color:var(--teal)}
+
+  /* ---------- 页脚 ---------- */
+  footer{background:linear-gradient(180deg,var(--bg),#E7F4F8);border-top:1px solid var(--line);
+    padding:52px 0 40px;text-align:center}
+  .disclaim{max-width:760px;margin:0 auto 30px;background:#fff;border:1px solid #D5EFEA;border-radius:14px;
+    padding:20px 26px;display:flex;gap:15px;align-items:flex-start;text-align:left}
+  .disclaim i{font-size:22px;color:var(--teal-deep);flex:none;margin-top:3px}
+  .disclaim b{color:var(--ink);font-size:14.5px;display:block;margin-bottom:3px}
+  .disclaim p{font-size:13px}
+  .foot-logo{display:inline-flex;align-items:center;gap:9px;color:var(--ink);font-weight:700;font-size:15px}
+  .foot-logo i{color:var(--teal);font-size:18px}
+  footer .meta{margin-top:12px;font-size:12.5px;color:#8FA9BF}
+  footer .meta code{background:#E9F3F9;color:var(--blue-deep);padding:2px 8px;border-radius:6px;font-size:11.5px}
+  #toTop{position:fixed;right:26px;bottom:26px;width:44px;height:44px;border-radius:50%;z-index:100;
+    color:#fff;background:linear-gradient(135deg,var(--blue),var(--teal));display:grid;place-items:center;
+    box-shadow:0 8px 20px rgba(62,155,214,.35);opacity:0;pointer-events:none;transition:.25s;border:none;cursor:pointer}
+  #toTop.show{opacity:1;pointer-events:auto}
+  #toTop:hover{transform:translateY(-3px)}
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width:960px){
+    .stat-grid{grid-template-columns:repeat(3,1fr)}
+    .feat-grid,.hl-grid{grid-template-columns:repeat(2,1fr)}
+    .mission,.flow-wrap{grid-template-columns:1fr}
+    .stack-grid{grid-template-columns:1fr}
+    .nav-links{display:none}
+  }
+  @media (max-width:560px){
+    section{padding:56px 0}
+    .feat-grid,.hl-grid{grid-template-columns:1fr}
+    .stat-grid{grid-template-columns:repeat(2,1fr)}
+    .sec-head h2{font-size:26px}
+    .hero .cta .btn{width:100%;justify-content:center}
+    .tl-item{flex-direction:column;gap:4px;padding-left:34px;position:relative}
+    .timeline::before{display:none}
+    .tl-ver{width:auto;text-align:left;padding-top:0}
+    .tl-dot{position:absolute;left:0;top:18px}
+    .tl-ver .cur{position:absolute;left:0;top:18px}
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+
+<!-- ======================= 导航 ======================= -->
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#hero"><span class="logo"><i class="fa-solid fa-stethoscope"></i></span>CampusCare 校园医务室</a>
+    <nav>
+      <ul class="nav-links">
+        <li><a href="#features">核心能力</a></li>
+        <li><a href="#flow">多 Agent 流程</a></li>
+        <li><a href="#architecture">系统架构</a></li>
+        <li><a href="#highlights">工程亮点</a></li>
+        <li><a href="#stack">技术栈</a></li>
+        <li><a href="#versions">版本演进</a></li>
+      </ul>
+    </nav>
+    <span class="nav-tag">v2.2.0-milvus</span>
+  </div>
+</header>
+
+<!-- ======================= Hero ======================= -->
+<section class="hero" id="hero">
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="hero-inner">
+    <div class="chiprow reveal in">
+      <span class="chip c1"><i class="fa-solid fa-robot"></i>&nbsp; Multi-Agent</span>
+      <span class="chip c2"><i class="fa-solid fa-comment-medical"></i>&nbsp; RAG 医学问答</span>
+      <span class="chip c1"><i class="fa-solid fa-calendar-check"></i>&nbsp; 智能预约</span>
+      <span class="chip c2"><i class="fa-solid fa-bell"></i>&nbsp; 风险升级</span>
+    </div>
+    <h1 class="reveal in">校园医务室 <span class="grad">多 Agent 智能问诊</span> 预约助手</h1>
+    <div class="sub-en reveal in">CAMPUSCARE · MULTI-AGENT SYMPTOM TRIAGE &amp; APPOINTMENT SYSTEM</div>
+    <p class="tagline reveal in">
+      系统不是替代医生，而是校医室的<b style="color:var(--ink)">智能前置分诊入口</b>——
+      自动完成症状收集追问、初步风险识别、专科预约匹配与健康知识问答，为校医分担琐碎而高频的前台工作。
+    </p>
+    <div class="cta reveal in">
+      <a class="btn primary" href="#features"><i class="fa-solid fa-magnifying-glass"></i> 了解核心能力</a>
+      <a class="btn ghost" href="#architecture"><i class="fa-solid fa-diagram-project"></i> 查看系统架构</a>
+    </div>
+    <div class="hero-scroll"><i class="fa-solid fa-angles-down"></i></div>
+  </div>
+</section>
+
+<!-- ======================= 数据看板 ======================= -->
+<section class="stats">
+  <div class="wrap">
+    <div class="stat-grid">
+      <div class="stat s-blue reveal"><div class="num">100万</div><div class="lbl">医学问答向量</div><div class="sub">Zilliz Cloud 云托管 · 768维</div></div>
+      <div class="stat s-teal reveal"><div class="num">5 类</div><div class="lbl">医学任务识别</div><div class="sub">doctor / appointment / faq / emergency / chat</div></div>
+      <div class="stat s-blue reveal"><div class="num">16 位</div><div class="lbl">校园专科医生</div><div class="sub">结构化档案 + 排班</div></div>
+      <div class="stat s-teal reveal"><div class="num">0%</div><div class="lbl">预约臆造率</div><div class="sub">GLM JSON Mode · Benchmark 实测</div></div>
+      <div class="stat s-blue reveal"><div class="num">100%</div><div class="lbl">红旗识别准确率</div><div class="sub">Benchmark 自动化评测</div></div>
+      <div class="stat s-teal reveal"><div class="num">2.2.0</div><div class="lbl">当前迭代版本</div><div class="sub">-milvus 发布线</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 项目定位 ======================= -->
+<section id="positioning" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-bullseye"></i> PROJECT POSITIONING · 项目定位</span>
+      <h2>它解决校医室的什么问题？</h2>
+      <p>校园医务室人流集中、问题琐碎：症状评估、预约排班、常见病咨询、复诊提醒……全压在前台，而这份工作应当<b style="color:var(--ink)">先由智能体完成 80%</b>，医生只处理真正需要面诊的部分。</p>
+      <div class="en">AN INTELLIGENT FRONT-DESK THAT HANDLES TRIAGE, BOOKING &amp; Q&amp;A</div>
+    </div>
+
+    <div class="mission">
+      <div class="lead-card reveal">
+        <h3><i class="fa-solid fa-circle-check"></i> 系统承担的前台工作链路</h3>
+        <ul class="chain">
+          <li><span class="dot"><i class="fa-solid fa-user-lock"></i></span><div><b>登录与会话隔离</b> —— 手机验证码登录，UUID Token 鉴权，多用户并行互不干扰</div></li>
+          <li><span class="dot"><i class="fa-solid fa-list"></i></span><div><b>症状收集与追问</b> —— 结构化采集症状细节，像医生一样追问</div></li>
+          <li><span class="dot"><i class="fa-solid fa-triangle-exclamation"></i></span><div><b>初步风险识别</b> —— 红旗症状实时拦截，优先升级处理</div></li>
+          <li><span class="dot"><i class="fa-solid fa-calendar-check"></i></span><div><b>预约与排班匹配</b> —— 专科匹配、可用时段分配、改约 / 取消</div></li>
+          <li><span class="dot"><i class="fa-solid fa-book-medical"></i></span><div><b>健康知识检索问答</b> —— 基于 100 万医学问答向量的 RAG 答疑</div></li>
+          <li><span class="dot"><i class="fa-solid fa-heart-pulse"></i></span><div><b>健康追踪与复诊建议</b> —— 问诊记录沉淀，驱动后续复诊提醒</div></li>
+        </ul>
+      </div>
+
+      <div class="guard reveal">
+        <div class="g-head"><i class="fa-solid fa-shield-heart"></i> 边界 · 系统刻意「不做」什么</div>
+        <div class="guard-item"><i class="fa-solid fa-user-doctor"></i><div>不替代医生诊断<b style="color:var(--ink);font-weight:700"></b><small>输出默认保守，只做辅助建议与初步评估</small></div></div>
+        <div class="guard-item"><i class="fa-solid fa-ban"></i><div>不输出「无需预约」等绝对否定性医疗结论<small>医学安全约束贯穿系统提示与返回层</small></div></div>
+        <div class="guard-item"><i class="fa-solid fa-truck-medical"></i><div>高风险症状立即转急救<small>胸痛、呼吸困难、昏迷等 7 大类红旗症状，优先提示 120 / 急诊</small></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 核心能力 ======================= -->
+<section id="features">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-gears"></i> CORE CAPABILITIES · 核心能力</span>
+      <h2>十二项能力，支撑一条完整就诊链路</h2>
+      <p>从一句话症状描述，到一次有据可依的预约。</p>
+      <div class="en">FROM A SYMPTOM SENTENCE TO AN EVIDENCE-BASED APPOINTMENT</div>
+    </div>
+
+    <div class="feat-grid">
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-tags"></i></div>
+        <h4>医学任务自动分类</h4><span class="en">TASK CLASSIFICATION</span>
+        <p>将用户输入实时识别为 doctor / appointment / faq / emergency / chat 五类意图，决定交给哪个 Agent 处理。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-diagram-project"></i></div>
+        <h4>多 Agent 分工协作</h4><span class="en">MULTI-AGENT ORCHESTRATION</span>
+        <p>中心分类 Agent 统筹调度，问诊、预约、问答各由专注的专家 Agent 独立完成，单一职责、上下文隔离。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-ellipsis"></i></div>
+        <h4>流式可解释输出</h4><span class="en">STREAMING &amp; EXPLAINABLE</span>
+        <p>流式返回结构化 Token（思考过程 / 最终回复 / 快捷按钮），用户的每一步推理都透明可见、可打断。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-book-medical"></i></div>
+        <h4>RAG 医学问答</h4><span class="en">RETRIEVAL-AUGMENTED Q&amp;A</span>
+        <p>先检索 100 万医学问答向量再做生成，回答有证据支撑；检索不到就坦诚求助医生，绝不编造。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-user-doctor"></i></div>
+        <h4>症状追问式诊断</h4><span class="en">SYMPTOM-BASED CONSULTATION</span>
+        <p>腹痛、头痛等复杂症状启动结构化追问（最多 3 轮），基于已收集信息给出诊断可能性，再给建议；简单症状直接给建议。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-train-subway"></i></div>
+        <h4>按症状推荐科室</h4><span class="en">SYMPTOM → DEPARTMENT MATCH</span>
+        <p>症状确认后按症状智能推荐科室（肚子疼→内科、牙疼→口腔科），推荐结果跨请求保留，流转顺畅。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h4>红旗症状风险升级</h4><span class="en">RED-FLAG ESCALATION</span>
+        <p>胸痛、呼吸困难、昏迷等危急词被实时捕获，弹窗不可一键关闭，须确认「拨打 120 / 立即就医」后强制进入紧急引导模式。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-calendar-check"></i></div>
+        <h4>医生排班与预约</h4><span class="en">SCHEDULE &amp; BOOKING</span>
+        <p>医生可用性查询、时段智能分配、冲突检测与改约 / 取消；时间缺失时拒绝臆造、强制询问补齐。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-file-contract"></i></div>
+        <h4>GLM JSON Mode 预约解析</h4><span class="en">STRUCTURED LLM OUTPUT</span>
+        <p>预约信息解析接入 GLM JSON Mode 结构化输出，字段结构稳定、杜绝臆造科室 / 时间（实测臆造率 0%）。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-unlock"></i></div>
+        <h4>无状态 Agent · 会话隔离</h4><span class="en">STATELESS AGENT + SESSION</span>
+        <p>Agent 无状态，会话与插槽全部外置 Redis；Token 多用户并发，进程崩溃也不丢失对话进度。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-heart-pulse"></i></div>
+        <h4>健康追踪与复诊建议</h4><span class="en">HEALTH FOLLOW-UP</span>
+        <p>沉淀每次问诊记录，从历史中学习偏好，给出复诊 / 随访 / 紧急就医等分级推荐。</p>
+      </article>
+      <article class="feat reveal">
+        <div class="ic"><i class="fa-solid fa-user-doctor"></i></div>
+        <h4>医生数据档案</h4><span class="en">DOCTOR PROFILE</span>
+        <p>16 位校园专科医生的学科、职称、学历、执业年限、评分结构化入库，支持值班与排班管理。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 多 Agent 流程 ======================= -->
+<section id="flow" style="background:linear-gradient(180deg,transparent,#EFF8FB 40%,transparent)">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-sitemap"></i> MULTI-AGENT PIPELINE · 多 Agent 流程</span>
+      <h2>一句话进来，如何被分流处理</h2>
+      <p>中心分类 Agent 作为「总调度」，把对话按意图交给最合适的专家 Agent。</p>
+      <div class="en">ONE CENTRAL ROUTER · SPECIALIZED CHILD AGENTS</div>
+    </div>
+
+    <div class="flow-wrap">
+      <!-- 左：流水线 -->
+      <div>
+        <div class="pipeline">
+          <div class="pipe-node reveal">
+            <span class="st"><i class="fa-solid fa-user"></i></span>
+            <div class="tt"><b>用户输入</b><span>自然语言症状描述 / 预约请求 / 健康问题</span></div>
+          </div>
+          <div class="pipe-arrow"></div>
+          <div class="pipe-node reveal">
+            <span class="st"><i class="fa-solid fa-compass"></i></span>
+            <div class="tt"><b>中心分类 Agent（总调度）</b><span>识别意图 → 维护对话状态机 → 分发到专家 Agent</span></div>
+          </div>
+          <div class="pipe-fork reveal">
+            <div class="fork-card"><i class="fa-solid fa-user-doctor"></i><b>问诊 Agent</b><small>症状追问 · 风险评估 · 就诊建议</small></div>
+            <div class="fork-card"><i class="fa-solid fa-calendar-check"></i><b>预约 Agent</b><small>专科匹配 · 时段分配 · 确认改约</small></div>
+            <div class="fork-card"><i class="fa-solid fa-book-medical"></i><b>问答 Agent</b><small>RAG 检索 · 证据支撑 · 保守作答</small></div>
+          </div>
+          <div class="pipe-arrow"></div>
+          <div class="pipe-node reveal">
+            <span class="st"><i class="fa-solid fa-cubes"></i></span>
+            <div class="tt"><b>服务层</b><span>知识检索、会话记忆、医生 / 预约服务、用户行为分析</span></div>
+          </div>
+          <div class="pipe-arrow"></div>
+          <div class="pipe-node reveal">
+            <span class="st"><i class="fa-solid fa-database"></i></span>
+            <div class="tt"><b>存储层</b><span>SQL 数据库 · Redis 状态 · 向量库（100万医学问答 · 768维）</span></div>
+          </div>
+        </div>
+
+        <!-- 分类说明 -->
+        <div class="class-grid">
+          <div class="class-item reveal"><span class="tag d">doctor</span><span class="desc">症状问诊 —— 报告症状需医生评估<b class="eg">例：「肚子疼得厉害，还拉肚子」</b></span></div>
+          <div class="class-item reveal"><span class="tag a">appointment</span><span class="desc">预约挂号 —— 明确要预约看医生<b class="eg">例：「帮我约一下明天下午的内科」</b></span></div>
+          <div class="class-item reveal"><span class="tag f">faq</span><span class="desc">健康咨询 —— 询问通用医学知识<b class="eg">例：「感冒一般几天能好？」</b></span></div>
+          <div class="class-item reveal"><span class="tag e">emergency</span><span class="desc">紧急升级 —— 检测到危急症状立即处理<b class="eg">例：「胸口很闷，喘不上气」</b></span></div>
+          <div class="class-item reveal"><span class="tag c">chat</span><span class="desc">闲聊 / 无关 —— 与医学无关的话题<b class="eg">例：「医务室几点开门？」</b></span></div>
+        </div>
+      </div>
+
+      <!-- 右：对话样张 -->
+      <aside class="demo reveal" style="position:sticky;top:86px">
+        <div class="demo-head">
+          <span class="av"><i class="fa-solid fa-robot"></i></span>
+          <div><b>CampusCare 智能问诊</b><small>任务分类 · 问诊分流 · 流式输出</small></div>
+          <span class="live"><i class="fa-solid fa-circle" style="font-size:7px"></i>&nbsp; LIVE DEMO</span>
+        </div>
+        <div class="demo-body">
+          <div class="bub user">医生您好，我这两天肚子一直疼，还拉肚子，想看看怎么办 😖</div>
+          <div class="bub thought"><i class="fa-solid fa-brain"></i>检测到症状主诉「腹痛 + 腹泻」→ 分类 <b>doctor</b>，转入问诊流程</div>
+          <div class="bub reply">收到，我先帮您收集一些情况，以便校医更好地评估：<br>① 疼痛是在<b>上腹还是下腹</b>？<br>② 大概持续<b>多久</b>了？<br>③ 有没有发热或呕吐？</div>
+          <div class="bub user">下腹疼，从昨天开始的，没有发烧</div>
+          <div class="bub reply">好的，已记录。初步判断属于<b>轻中度胃肠不适</b>，建议到内科进一步评估，今天值班的王芳医生有空位。</div>
+          <div class="chips">
+            <span class="pc"><i class="fa-solid fa-calendar-check"></i>&nbsp; 帮我预约王医生</span>
+            <span class="pc blue"><i class="fa-solid fa-table-list"></i>&nbsp; 查看值班表</span>
+          </div>
+          <div class="typing"><span></span><span></span><span></span></div>
+        </div>
+        <div class="demo-note"><i class="fa-regular fa-comment-dots"></i> 示例复刻自前端 index.html 的 [THOUGHT] / [REPLY] / [BUTTONS] 流式渲染</div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 系统架构 ======================= -->
+<section id="architecture">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-layer-group"></i> LAYERED ARCHITECTURE · 系统架构</span>
+      <h2>五层架构，单向调用</h2>
+      <p>Web → API → Agents → Services → DB，层与层严格隔离，仓库模式封装数据访问。</p>
+      <div class="en">STRICT ONE-DIRECTIONAL LAYERS · REVERSE CALLS FORBIDDEN</div>
+    </div>
+
+    <div class="arch">
+      <div class="layer s5 reveal"><div class="rank">Web</div><div class="meta">
+        <h4>Web 页面层 <small>PRESENTATION</small></h4>
+        <p>FastAPI 页面路由 + Jinja2 模板 + 原生 JS 流式聊天界面，共 6 个页面</p>
+        <div class="files"><code>web/routes.py</code><code>templates/index.html</code><code>templates/login.html</code><code>…共6页</code></div>
+      </div></div>
+      <div class="arch-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+      <div class="layer s4 reveal"><div class="rank">API</div><div class="meta">
+        <h4>接口层 <small>API GATEWAY</small></h4>
+        <p>认证 / 聊天 / 问诊 / 预约 / 知识接口，Bearer Token 鉴权与统一响应模型</p>
+        <div class="files"><code>api/auth.py</code><code>api/chat_handler.py</code><code>api/core/</code></div>
+      </div></div>
+      <div class="arch-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+      <div class="layer s3 reveal"><div class="rank">Agents</div><div class="meta">
+        <h4>智能体层 <small>AGENT ORCHESTRATION</small></h4>
+        <p>中心分类 Agent + 问诊 / 预约 / 用户行为专家，子模块按职责拆分</p>
+        <div class="files"><code>task_classification_agent.py</code><code>consultant_agent.py</code><code>appointment_agent.py</code></div>
+      </div></div>
+      <div class="arch-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+      <div class="layer s2 reveal"><div class="rank">Services</div><div class="meta">
+        <h4>服务层 <small>BUSINESS SERVICES</small></h4>
+        <p>RAG 知识检索、会话记忆、医生与预约服务、用户行为推荐</p>
+        <div class="files"><code>knowledge_service.py</code><code>conversation_memory_service.py</code><code>milvus_service.py</code></div>
+      </div></div>
+      <div class="arch-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+      <div class="layer s1 reveal"><div class="rank">DB</div><div class="meta">
+        <h4>数据层 <small>DATA ACCESS</small></h4>
+        <p>SQLAlchemy 模型 + Repository 仓储，SQLite / MySQL 双支持</p>
+        <div class="files"><code>db/models.py</code><code>db/repositories/</code><code>db/db_router.py</code></div>
+      </div></div>
+    </div>
+
+    <div class="arch-rule reveal"><i class="fa-solid fa-lock"></i> 分层单向依赖：Web→API→Agents→Services→DB，禁止下层反向调用上层</div>
+    <p class="arch-note reveal">清晰的边界让每个模块可独立测试与替换 —— 例如向量库后端可一键从 Milvus 切到 Pinecone 或 FAISS，而调用方零改动。</p>
+  </div>
+</section>
+
+<!-- ======================= 工程亮点 ======================= -->
+<section id="highlights">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-lightbulb"></i> ENGINEERING HIGHLIGHTS · 工程亮点</span>
+      <h2>几个「硬核」设计决策</h2>
+      <p>每一处取舍，都让系统更稳、更可扩展、更适合校园场景落地。</p>
+      <div class="en">DESIGN DECISIONS THAT SCALE</div>
+    </div>
+
+    <div class="hl-grid">
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-wind"></i></span>
+          <div><h4>无状态 Agent 设计</h4><small>STATELESS AGENTS · STATE IN REDIS</small></div></div>
+        <div class="body">
+          <p>Agent 进程本身不存任何状态，对话进度、插槽、摘要全部外置，换来优雅的水平扩展。</p>
+          <pre><span class="c"># 状态全部落在 Redis，TTL 自动过期</span>
+<span class="k">state:</span>{"user_id"}:{"conversation_id"} → <span class="k">appointment</span>
+<span class="k">auth:token:</span>{token} → user_id / conversation_id</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>同一会话串行执行，跨会话并行不互扰</li>
+            <li><i class="fa-solid fa-circle-check"></i>进程崩溃重启，对话进度不丢失</li>
+            <li><i class="fa-solid fa-circle-check"></i>多实例水平扩展，天然支撑多用户并发</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-cloud"></i></span>
+          <div><h4>Zilliz Cloud 向量检索 + RRF</h4><small>MILVUS MANAGED · HYBRID SEARCH</small></div></div>
+        <div class="body">
+          <p>生产走 Zilliz Cloud（Milvus 云托管），100 万条 768 维向量免自建；检索用 Milvus 内置 INVERTED 全文检索 + 向量召回 + RRF 融合。</p>
+          <pre><span class="k">VECTOR_DB_TYPE</span> = milvus   <span class="c"># Zilliz Cloud Public Endpoint</span>
+向量召回 ∪ 全文召回 → <span class="k">RRF 融合排序</span>
+Milvus INVERTED + TEXT_MATCH 中文关键词</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>100 万医学问答向量，768 维（PCA 降维）</li>
+            <li><i class="fa-solid fa-circle-check"></i>本地 / 云端向量库只改一个配置</li>
+            <li><i class="fa-solid fa-circle-check"></i>混合检索弥补纯向量 / 纯关键词的盲区</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-microchip"></i></span>
+          <div><h4>本地离线 Embedding + PCA</h4><small>BGE-M3 · 1024 → 768-DIM</small></div></div>
+        <div class="body">
+          <p>FlagEmbedding 引入 BGE-M3（1024 维）离线生成向量，再经 PCA 降维至 768 维存储，大幅降低检索开销。</p>
+          <pre><span class="k">FlagEmbedding</span> → BGE-M3 1024维
+<span class="k">PCA 降维</span> → 768维（解释方差 0.9968）→ 向量库
+查询同链路降维，保证召回一致</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>校园 / 隔离内网也能离线完成 embedding</li>
+            <li><i class="fa-solid fa-circle-check"></i>维度减 25%，云向量库存储成本更低</li>
+            <li><i class="fa-solid fa-circle-check"></i>查询端加载同一 PCA 模型，结果不失配</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-shield-heart"></i></span>
+          <div><h4>医学安全约束层</h4><small>MEDICAL SAFETY ENGINEERING</small></div></div>
+        <div class="body">
+          <p>红旗症状 7 大类别，客户端 + 服务端双重检测；风险事件双持久化并强制进入紧急引导，直到用户确认已就医。</p>
+          <pre><span class="k">risk_events</span> 表写入 + Redis 标记（双持久化）
+弹窗不可一键关闭 → 强制紧急模式 → 急救引导</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>只做辅助建议，不做最终诊断</li>
+            <li><i class="fa-solid fa-circle-check"></i>不输出「无需预约」等绝对排除性结论</li>
+            <li><i class="fa-solid fa-circle-check"></i>风险事件留存，可审计、可追踪</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-plug"></i></span>
+          <div><h4>跨厂商 LLM Provider 工厂</h4><small>MULTI-LLM PROVIDER FACTORY</small></div></div>
+        <div class="body">
+          <p>一个工厂方法统一装配各家对话与 Embedding 模型，切换厂商不动业务代码。</p>
+          <pre>providers = qwen · deepseek · zhipu · openai
+             · openai-compatible · azure · volcengine
+默认 <span class="k">openai-compatible</span>，chat / embedding 分别配置</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>国内模型可直连，网络环境更友好</li>
+            <li><i class="fa-solid fa-circle-check"></i>适配 DeepSeek 思考模式（该模式自动关闭 JSON Mode）</li>
+            <li><i class="fa-solid fa-circle-check"></i>模型替换仅一处配置，利于成本与质量调优</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-bolt"></i></span>
+          <div><h4>流式输出 · 低首字延迟</h4><small>ASYNC STREAMING CHAT</small></div></div>
+        <div class="body">
+          <p>FastAPI 异步生成器把回复分片流式推给前端，思考过程逐步可见、可打断。</p>
+          <pre>AsyncGenerator → token 流
+[THOUGHT]… [REPLY]… [BUTTONS]…</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>首个字符即返回，等待感大幅下降</li>
+            <li><i class="fa-solid fa-circle-check"></i>Agent 思考链透明，用户建立信任</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-chart-line"></i></span>
+          <div><h4>Langfuse 全链路可观测性</h4><small>LLM OBSERVABILITY</small></div></div>
+        <div class="body">
+          <p>所有 LLM 调用（分类 / 预约解析 / 问诊建议 / 追问分析）自动接入 Langfuse 云托管，记录完整 trace。</p>
+          <pre><span class="k">model_provider</span>.py 统一挂载 CallbackHandler
+trace = prompt + 输出 + token + 耗时
+未配置 key → <span class="k">优雅降级</span>，不影响运行</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>每个回答可回溯到输入与模型调用链</li>
+            <li><i class="fa-solid fa-circle-check"></i>token 与耗时可视化，便于成本监控</li>
+            <li><i class="fa-solid fa-circle-check"></i>一键开关，无需改动业务代码</li>
+          </ul>
+        </div>
+      </article>
+
+      <article class="hl reveal">
+        <div class="top"><span class="ic"><i class="fa-solid fa-flask"></i></span>
+          <div><h4>4 项 Agent Benchmark</h4><small>AUTOMATED EVALUATION</small></div></div>
+        <div class="body">
+          <p>自动化基准评估 Agent 能力，报告统一存于 benchmark/reports/（分类、预约、追问、检索四维）。</p>
+          <pre><span class="k">python benchmark/run_all.py</span>
+bench_classify · bench_appointment
+bench_followup · bench_retrieval</pre>
+          <ul class="pts">
+            <li><i class="fa-solid fa-circle-check"></i>任务分类准确率 95%，红旗识别 100%</li>
+            <li><i class="fa-solid fa-circle-check"></i>预约字段解析 100% · 臆造率 0%</li>
+            <li><i class="fa-solid fa-circle-check"></i>每次改动可回归，质量可量化</li>
+          </ul>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 技术栈 ======================= -->
+<section id="stack">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-cubes"></i> TECHNOLOGY STACK · 技术栈</span>
+      <h2>轻盈而务实的选型</h2>
+      <p>每项技术都服务「快速落地 + 可扩展」两个目标。</p>
+      <div class="en">PRAGMATIC, LIGHT, AND SCALABLE</div>
+    </div>
+
+    <div class="stack-grid">
+      <div class="stack reveal">
+        <h4><i class="fa-solid fa-robot"></i> 编排与 LLM <span>ORCHESTRATION</span></h4>
+        <p class="desc">中心分类 + 专家子 Agent 的自研编排，GLM JSON Mode 结构化预约解析，Langfuse 追踪、Benchmark 评测闭环。</p>
+        <div class="pill-row">
+          <span class="pill">LangChain</span><span class="pill">自研多 Agent 编排</span><span class="pill">Provider 工厂</span>
+          <span class="pill t">Qwen</span><span class="pill t">DeepSeek</span><span class="pill t">智谱 GLM</span>
+          <span class="pill t">Azure OpenAI</span><span class="pill t">Volcengine</span>
+        </div>
+      </div>
+      <div class="stack reveal">
+        <h4><i class="fa-solid fa-database"></i> 检索与向量 <span>RETRIEVAL &amp; VECTOR</span></h4>
+        <p class="desc">混合检索：全文 + 向量召回 + RRF 融合；生产走 Zilliz Cloud（Milvus 托管），内置 100 万医学向量。</p>
+        <div class="pill-row">
+          <span class="pill">RAG</span><span class="pill t">Zilliz Cloud · 100万向量</span><span class="pill">Milvus</span>
+          <span class="pill">Pinecone</span><span class="pill">FAISS</span><span class="pill t">BGE-M3</span><span class="pill">PCA 768</span><span class="pill">RRF 融合</span>
+        </div>
+      </div>
+      <div class="stack reveal">
+        <h4><i class="fa-solid fa-server"></i> 数据与后端 <span>BACKEND &amp; DATA</span></h4>
+        <p class="desc">异步 Web 框架 + ORM + 双库支持；Redis 承载会话状态与并发隔离。</p>
+        <div class="pill-row">
+          <span class="pill">FastAPI</span><span class="pill t">SQLAlchemy</span><span class="pill">SQLite</span>
+          <span class="pill">MySQL</span><span class="pill t">Redis</span><span class="pill">Repository 模式</span>
+        </div>
+      </div>
+      <div class="stack reveal">
+        <h4><i class="fa-solid fa-display"></i> 前端页面 <span>WEB FRONTEND</span></h4>
+        <p class="desc">轻量原生实现，无需重型前端框架，服务端渲染 + 流式聊天体验。</p>
+        <div class="pill-row">
+          <span class="pill t">Jinja2</span><span class="pill">HTML / CSS / JS</span><span class="pill t">流式聊天 UI</span>
+          <span class="pill">登录 · 问诊 · 预约 · 值班 · 知识库 · 行为分析</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 版本演进 ======================= -->
+<section id="versions">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="sec-eyebrow"><i class="fa-solid fa-code-branch"></i> ROADMAP · 版本演进</span>
+      <h2>从一个场景原型，到百万向量检索系统</h2>
+      <div class="en">FROM A BOOKING PROTOTYPE TO A 1M-VECTOR RAG SYSTEM</div>
+    </div>
+
+    <div class="timeline">
+      <div class="tl-item reveal">
+        <div class="tl-ver"><span class="v">v1.x</span></div>
+        <div class="tl-dot"></div>
+        <div class="tl-card">
+          <b>门店预约对话原型</b>
+          <div class="en">MULTI-TURN SLOT BOOKING PROTOTYPE</div>
+          <ul><li>验证「多轮插槽式」对话预约与流程状态机</li><li>沉淀对话驱动 + 结构化信息抽取的核心思路</li></ul>
+        </div>
+      </div>
+      <div class="tl-item reveal">
+        <div class="tl-ver"><span class="v">v2.0.0-medical</span></div>
+        <div class="tl-dot"></div>
+        <div class="tl-card">
+          <b>校园医务室语义迁移</b>
+          <div class="en">MEDICAL DOMAIN MIGRATION</div>
+          <ul><li>由门店场景整体迁移到校园医务室医疗语义</li><li>新增 Token 登录与会话并发隔离（无状态 Agent）</li><li>红旗症状风险升级 + 医学化前端重构</li></ul>
+        </div>
+      </div>
+      <div class="tl-item reveal">
+        <div class="tl-ver"><span class="v">v2.1.0-milvus</span></div>
+        <div class="tl-dot"></div>
+        <div class="tl-card">
+          <b>向量库上云 · Zilliz Cloud</b>
+          <div class="en">MANAGED MILVUS · 100W VECTORS</div>
+          <ul><li>向量数据重生成：100 万条，BGE-M3 → PCA 降维至 768 维</li><li>检索链路：查询向量 → PCA → Zilliz Milvus → RRF 融合</li><li>本地 Milvus 部署降级为可选方案（milvus/ 附录）</li></ul>
+        </div>
+      </div>
+      <div class="tl-item cur reveal">
+        <div class="tl-ver cur"><span class="v">v2.2.0-milvus</span></div>
+        <div class="tl-dot"></div>
+        <div class="tl-card">
+          <b>问诊体验与工程质量双升级</b>
+          <div class="en">CURRENT · CONSULT UX + ENGINEERING</div>
+          <ul><li>症状追问式诊断 + 按症状推荐科室；预约解析接入 GLM JSON Mode（臆造率 0%）</li><li>红旗症状强制紧急模式 + 风险事件双持久化（MySQL + Redis）</li><li>前端薄荷绿清新风重构 · Langfuse 可观测 · 4 项 Benchmark 评估闭环</li></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 页脚 ======================= -->
+<footer>
+  <div class="wrap">
+    <div class="disclaim">
+      <i class="fa-solid fa-circle-info"></i>
+      <div>
+        <b>医疗安全声明 · Medical Disclaimer</b>
+        <p>本系统仅供参考，确诊需要医生面诊，不能替代医生诊断。出现胸痛、呼吸困难、意识模糊等红旗症状时，系统会优先提示立即拨打 120 或前往急诊。系统不输出任何绝对排除性医疗结论。</p>
+      </div>
+    </div>
+    <div class="foot-logo"><i class="fa-solid fa-stethoscope"></i> CampusCare_Agent · 校园医务室多 Agent 智能问诊预约系统</div>
+    <div class="meta">
+      本页为项目分享展示 · 当前版本 <code>2.2.0-milvus</code> · FastAPI + LangChain + RAG + Zilliz Cloud Milvus
+    </div>
+  </div>
+</footer>
+
+<button id="toTop" aria-label="回到顶部"><i class="fa-solid fa-arrow-up"></i></button>
+
+<script>
+  // 滚动进度条
+  const bar = document.getElementById('progress');
+  const toTop = document.getElementById('toTop');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const max = h.scrollHeight - h.clientHeight;
+    bar.style.width = (max > 0 ? (h.scrollTop / max) * 100 : 0) + '%';
+    toTop.classList.toggle('show', h.scrollTop > 500);
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+  toTop.addEventListener('click', () => window.scrollTo({top:0, behavior:'smooth'}));
+
+  // 淡入动画（滚动进入视口时显现；滚动事件 + 兜底轮询双驱动，兼容各类内嵌/预览环境）
+  const reveals = document.querySelectorAll('.reveal');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let fallbackTimer;
+  const revealAll = () => reveals.forEach(el => el.classList.add('in'));
+  const revealOnScroll = () => {
+    const winBot = window.innerHeight;
+    reveals.forEach(el => {
+      if (el.classList.contains('in')) return;
+      if (el.getBoundingClientRect().top < winBot * 0.96) el.classList.add('in');
+    });
+    if ([...reveals].every(el => el.classList.contains('in'))) {
+      clearInterval(fallbackTimer);
+      window.removeEventListener('scroll', revealOnScroll);
+    }
+  };
+  if (reduceMotion) {
+    revealAll();
+  } else {
+    window.addEventListener('scroll', revealOnScroll, {passive:true});
+    revealOnScroll();                       // 初始加载即检查首屏
+    fallbackTimer = setInterval(revealOnScroll, 400);  // 兜底：滚动事件未触达时也能显现
+  }
+</script>
+</body>
+</html>

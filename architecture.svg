@@ -1,0 +1,335 @@
+<svg id="arch" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 1530" width="1440" height="1530" role="img" aria-labelledby="title desc">
+  <title id="title">CampusCare_Agent · 系统架构图</title>
+  <desc id="desc">校园医务室多 Agent 智能问诊预约系统 v2.2.0 架构：Web/API/Agents/Services/DB 五层 + 外部依赖</desc>
+
+  <defs>
+    <linearGradient id="gradMain" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3E9BD6"/><stop offset="1" stop-color="#2FB6AC"/>
+    </linearGradient>
+    <linearGradient id="gradBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#4FA8DE"/><stop offset="1" stop-color="#2C7CB8"/>
+    </linearGradient>
+    <linearGradient id="gradTeal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3CC2B6"/><stop offset="1" stop-color="#239A92"/>
+    </linearGradient>
+    <linearGradient id="bandTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#2B6EA0" flood-opacity="0.10"/>
+    </filter>
+    <filter id="shadowGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#2FB6AC" flood-opacity="0.22"/>
+    </filter>
+    <marker id="arrMain" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,1 L9,5.5 L0,10 z" fill="#6FA9CF"/>
+    </marker>
+    <marker id="arrDashed" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,1 L9,5.5 L0,10 z" fill="#5BC2B7"/>
+    </marker>
+    <marker id="arrWhite" markerWidth="11" markerHeight="11" refX="8" refY="5.5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,1 L9,5.5 L0,10 z" fill="#3E9BD6"/>
+    </marker>
+  </defs>
+
+  <style>
+    text{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",-apple-system,sans-serif}
+    .t-title{fill:#1F3A5F;font-weight:800}
+    .t-sub{fill:#8FA9BF;font-weight:600;letter-spacing:2px}
+    .t-hdr{fill:#FFFFFF;font-weight:700}
+    .t-lane{fill:#2C7CB8;font-weight:700}
+    .t-mod{fill:#1F3A5F;font-weight:700}
+    .t-txt{fill:#5A7184}
+    .t-note{fill:#9FB6CA}
+    .t-white{fill:#FFFFFF}
+    .mono{font-family:"SF Mono","JetBrains Mono","Cascadia Code",Consolas,monospace}
+  </style>
+
+  <rect x="0" y="0" width="1440" height="1530" fill="#F4FAFD"/>
+  <!-- 顶部标题 -->
+  <text x="720" y="34" text-anchor="middle" class="t-title" style="font-size:20px">CampusCare · 校园医务室智能问诊预约系统 — 架构总览</text>
+  <text x="720" y="56" text-anchor="middle" class="t-sub" style="font-size:11px">FASTAPI · LANGCHAIN · MULTI-AGENT · RAG · ZILLIZ MILVUS   |   v2.2.0-milvus</text>
+
+  <!-- 用户 -->
+  <rect x="333" y="66" width="500" height="46" rx="23" fill="#FFFFFF" stroke="#3E9BD6" stroke-width="1.4" filter="url(#shadow)"/>
+  <text x="583" y="84" text-anchor="middle" style="font-size:14px;font-weight:700" fill="#1F3A5F">学生 / 教职工 用户</text>
+  <text x="583" y="101" text-anchor="middle" class="t-note" style="font-size:10.5px">手机号 + 验证码登录（演示直返） · UUID Token · 会话隔离</text>
+  <line x1="583" y1="114" x2="583" y2="131" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+
+  <!-- ============================================================ L1 WEB -->
+  <g id="lane-web">
+    <rect x="50" y="134" width="1066" height="144" rx="18" fill="#FFFFFF" fill-opacity="0.86" stroke="#D9E9F4" stroke-width="1.3"/>
+    <rect x="50" y="134" width="6" height="144" rx="3" fill="url(#gradBlue)"/>
+    <text x="72" y="158" class="t-lane" style="font-size:13.5px">Web · 前端展示层</text>
+    <text x="220" y="158" class="t-note" style="font-size:10px;letter-spacing:1px">PRESENTATION</text>
+    <!-- 卡片行 -->
+    <rect x="74" y="172" width="330" height="90" rx="11" fill="#F2F9FE" stroke="#D3E7F3" filter="url(#shadow)"/>
+    <text x="88" y="191" class="t-mod" style="font-size:12.5px">前端页面 · Jinja2 + 原生 JS</text>
+    <text x="88" y="207" class="t-txt mono" style="font-size:10px">web/templates · login / technician / knowledge…</text>
+    <text x="88" y="224" class="t-txt" style="font-size:10.5px">登录 · 问诊聊天 · 医生值班 · 知识库 · 行为分析</text>
+    <text x="88" y="247" class="t-note" style="font-size:10px">流式渲染 [THOUGHT]/[REPLY] · 风险弹窗 · 快捷按钮</text>
+
+    <rect x="416" y="172" width="330" height="90" rx="11" fill="#FFFFFF" stroke="#D9E9F4" filter="url(#shadow)"/>
+    <text x="430" y="191" class="t-mod mono" style="font-size:12px">web/routes.py · 页面路由</text>
+    <text x="430" y="207" class="t-txt" style="font-size:10.5px">GET /、/login、/knowledge、值班页（Jinja2）</text>
+    <text x="430" y="224" class="t-txt" style="font-size:10.5px">静态资源 /static · 统一页面入口</text>
+    <text x="430" y="247" class="t-note" style="font-size:10px">CORS · 由 FastAPI 提供渲染</text>
+
+    <rect x="758" y="172" width="330" height="90" rx="11" fill="#E7F6F4" stroke="#C9E8E3" filter="url(#shadow)"/>
+    <text x="772" y="191" class="t-mod mono" style="font-size:12px">POST /chat/stream · 流式入口</text>
+    <text x="772" y="207" class="t-txt" style="font-size:10.5px">聊天主链路端点 · SSE/text · Bearer 鉴权</text>
+    <text x="772" y="224" class="t-note" style="font-size:10px">↓ 校验 Token 后转交 API 层编排</text>
+    <text x="772" y="247" class="t-note" style="font-size:10px">返回流：THOUGHT → REPLY → BUTTONS</text>
+  </g>
+
+  <!-- ============================================================ L2 API -->
+  <line x1="583" y1="278" x2="583" y2="296" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+  <g id="lane-api">
+    <rect x="50" y="298" width="1066" height="156" rx="18" fill="#FFFFFF" fill-opacity="0.86" stroke="#D9E9F4" stroke-width="1.3"/>
+    <rect x="50" y="298" width="6" height="156" rx="3" fill="url(#gradBlue)"/>
+    <text x="72" y="322" class="t-lane" style="font-size:13.5px">API · 接口层</text>
+    <text x="205" y="322" class="t-note" style="font-size:10px;letter-spacing:1px">GATEWAY · BEARER AUTH</text>
+    <!-- 认证卡 -->
+    <rect x="74" y="336" width="250" height="102" rx="11" fill="#FFFFFF" stroke="#D9E9F4" filter="url(#shadow)"/>
+    <text x="88" y="355" class="t-mod mono" style="font-size:12px">api/auth.py</text>
+    <text x="88" y="371" class="t-txt" style="font-size:10.5px">验证码 / 登录 / logout / me</text>
+    <text x="88" y="387" class="t-txt" style="font-size:10.5px">Token 校验 · 黑名单</text>
+    <text x="88" y="406" class="t-note mono" style="font-size:9.5px">auth:token:{t} → Redis</text>
+    <text x="88" y="423" class="t-note" style="font-size:10px">并发会话隔离</text>
+    <!-- chat_handler -->
+    <rect x="348" y="336" width="330" height="102" rx="11" fill="#E7F6F4" stroke="#C9E8E3" filter="url(#shadow)"/>
+    <text x="362" y="355" class="t-mod mono" style="font-size:12px">api/chat_handler.py · 编排入口</text>
+    <text x="362" y="373" class="t-txt" style="font-size:10.5px">组装 TaskClassificationAgent + 业务 Agent</text>
+    <text x="362" y="389" class="t-txt" style="font-size:10.5px">校验会话 → 注入 user_auth / medical_context</text>
+    <text x="362" y="406" class="t-txt" style="font-size:10.5px">async 流式生成回复</text>
+    <text x="362" y="423" class="t-note mono" style="font-size:9.5px">process_user_input_stream()</text>
+    <!-- 医疗接口 -->
+    <rect x="702" y="336" width="400" height="102" rx="11" fill="#FFFFFF" stroke="#D9E9F4" filter="url(#shadow)"/>
+    <text x="716" y="355" class="t-mod" style="font-size:12px">医疗 REST 接口 · /api/medical</text>
+    <text x="716" y="374" class="t-txt mono" style="font-size:10px">api/task.py 分类 · api/appointment.py 预约</text>
+    <text x="716" y="390" class="t-txt mono" style="font-size:10px">api/consultation.py 问诊 · api/technician.py 值班</text>
+    <text x="716" y="409" class="t-note" style="font-size:10px">统一响应 / 业务异常（api/core）· 知识库管理另挂 /api/knowledge</text>
+  </g>
+
+  <!-- ============================================================ L3 AGENTS -->
+  <line x1="583" y1="454" x2="583" y2="472" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+  <g id="lane-agents">
+    <rect x="50" y="474" width="1066" height="304" rx="18" fill="#FFFFFF" fill-opacity="0.9" stroke="#CFE4EC" stroke-width="1.6"/>
+    <rect x="50" y="474" width="6" height="304" rx="3" fill="url(#gradMain)"/>
+    <text x="72" y="498" style="font-size:13.5px;font-weight:800;fill:#1F3A5F">Agents · 智能体编排层</text>
+    <text x="268" y="498" class="t-note" style="font-size:10px;letter-spacing:1px">MULTI-AGENT ORCHESTRATION · CENTER ROUTER</text>
+
+    <!-- 中枢 -->
+    <rect x="210" y="512" width="746" height="62" rx="13" fill="url(#gradMain)" filter="url(#shadowGlow)"/>
+    <text x="583" y="535" text-anchor="middle" class="t-white" style="font-size:14.5px;font-weight:800">TaskClassificationAgent · 中枢：分类 + 状态机 + 路由</text>
+    <text x="583" y="555" text-anchor="middle" style="fill:#EAF8F6;font-size:10.5px">task_classification_agent.py — 判定意图 → 维护对话状态 → 分发到子 Agent / 紧急直达</text>
+
+    <!-- 5 类 -->
+    <rect x="210" y="586" width="104" height="24" rx="12" fill="#EAF3FB" stroke="#9CC4E2"/>
+    <text x="262" y="602" text-anchor="middle" class="mono" style="font-size:10.5px;font-weight:700;fill:#2C7CB8">doctor</text>
+    <rect x="324" y="586" width="124" height="24" rx="12" fill="#EAF3FB" stroke="#9CC4E2"/>
+    <text x="386" y="602" text-anchor="middle" class="mono" style="font-size:10.5px;font-weight:700;fill:#2C7CB8">appointment</text>
+    <rect x="458" y="586" width="64" height="24" rx="12" fill="#EAF3FB" stroke="#9CC4E2"/>
+    <text x="490" y="602" text-anchor="middle" class="mono" style="font-size:10.5px;font-weight:700;fill:#2C7CB8">faq</text>
+    <rect x="532" y="586" width="104" height="24" rx="12" fill="#FBE9E6" stroke="#E8B4A8"/>
+    <text x="584" y="602" text-anchor="middle" class="mono" style="font-size:10.5px;font-weight:700;fill:#C4553F">emergency</text>
+    <rect x="646" y="586" width="72" height="24" rx="12" fill="#EAF3FB" stroke="#9CC4E2"/>
+    <text x="682" y="602" text-anchor="middle" class="mono" style="font-size:10.5px;font-weight:700;fill:#2C7CB8">chat</text>
+    <text x="746" y="602" class="t-note" style="font-size:10px">五类意图 · 关键词 + LLM 兜底判定</text>
+
+    <!-- 路由分叉箭头 -->
+    <line x1="583" y1="614" x2="583" y2="626" stroke="#6FA9CF" stroke-width="2"/>
+    <line x1="583" y1="626" x2="392" y2="664" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+    <line x1="583" y1="626" x2="776" y2="664" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+
+    <!-- 业务 Agent 两卡 -->
+    <rect x="92" y="668" width="588" height="96" rx="12" fill="#FFFFFF" stroke="#D9E9F4" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="92" y="668" width="588" height="4" rx="2" fill="url(#gradMain)"/>
+    <text x="110" y="689" class="t-mod mono" style="font-size:12.5px">ConsultantAgent · 问诊 / 知识 Agent</text>
+    <text x="110" y="706" class="t-txt" style="font-size:10.5px">症状追问（≤3 轮）· 保守模式 · 保守建议 · 红旗紧急旁路</text>
+    <text x="110" y="722" class="t-txt" style="font-size:10.5px">FAQ / RAG 检索问答 · 生成诊断可能性再给建议</text>
+    <text x="110" y="749" class="t-note mono" style="font-size:9.5px">agents/consultant_agent.py · agents/consultant/…</text>
+
+    <rect x="692" y="668" width="424" height="96" rx="12" fill="#FFFFFF" stroke="#D9E9F4" stroke-width="1.5" filter="url(#shadow)"/>
+    <rect x="692" y="668" width="424" height="4" rx="2" fill="url(#gradTeal)"/>
+    <text x="710" y="689" class="t-mod mono" style="font-size:12.5px">AppointmentAgent · 预约 Agent</text>
+    <text x="710" y="706" class="t-txt" style="font-size:10.5px">症状 → 科室推荐 · 时段分配 · 冲突检测</text>
+    <text x="710" y="722" class="t-txt" style="font-size:10.5px">GLM JSON Mode 结构化解析 · 拒绝臆造时间</text>
+    <text x="710" y="749" class="t-note mono" style="font-size:9.5px">agents/appointment_agent.py</text>
+
+    <!-- 支撑注 -->
+    <text x="92" y="770" class="t-note" style="font-size:10px">支撑分包：task_classification/（分类·路由·状态） · consultant/（检索·生成·追问） · appointment/（解析·排期） · user_behavior/（偏好·画像）</text>
+  </g>
+
+  <!-- ============================================================ L4 SERVICES -->
+  <line x1="583" y1="778" x2="583" y2="796" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+  <g id="lane-svc">
+    <rect x="50" y="798" width="1066" height="184" rx="18" fill="#FFFFFF" fill-opacity="0.9" stroke="#D5EBE8" stroke-width="1.4"/>
+    <rect x="50" y="798" width="6" height="184" rx="3" fill="url(#gradTeal)"/>
+    <text x="72" y="822" style="font-size:13.5px;font-weight:800;fill:#239A92">Services · 服务层</text>
+    <text x="232" y="822" class="t-note" style="font-size:10px;letter-spacing:1px">BUSINESS SERVICES</text>
+
+    <rect x="74" y="836" width="516" height="130" rx="11" fill="#E7F6F4" stroke="#C9E8E3" filter="url(#shadow)"/>
+    <text x="90" y="856" class="t-mod mono" style="font-size:12px">knowledge_service.py · RAG 知识服务</text>
+    <text x="90" y="874" class="t-txt" style="font-size:10.5px">混合检索：向量召回 + Milvus INVERTED 全文 → RRF 融合</text>
+    <text x="90" y="890" class="t-txt" style="font-size:10.5px">同义词扩展 · 三后端可降级 Milvus/Pinecone/FAISS</text>
+    <text x="90" y="908" class="t-mod mono" style="font-size:11.5px">milvus_service.py</text>
+    <text x="90" y="923" class="t-txt" style="font-size:10px">连接 Zilliz · 查询向量 PCA→768 · text_match 全文</text>
+    <text x="90" y="938" class="t-txt" style="font-size:10px">collection：campus_care_st · 100 万向量 · dim 768</text>
+    <text x="90" y="955" class="t-note" style="font-size:10px">（agents/consultant/knowledge_retriever.py 经此检索）</text>
+
+    <rect x="602" y="836" width="502" height="130" rx="11" fill="#FFFFFF" stroke="#D9E9F4" filter="url(#shadow)"/>
+    <text x="618" y="856" class="t-mod mono" style="font-size:12px">conversation_memory_service.py · 会话记忆</text>
+    <text x="618" y="874" class="t-txt" style="font-size:10.5px">历史 / 医疗槽 / 预约槽 / 摘要 · 存 Redis（无则内存）</text>
+    <text x="618" y="893" class="t-txt mono" style="font-size:10px">auth_service · appointment_service</text>
+    <text x="618" y="909" class="t-txt mono" style="font-size:10px">technician_service · user_behavior_service</text>
+    <text x="618" y="928" class="t-note" style="font-size:10px">recommendation_service（定时复诊建议线程）</text>
+    <text x="618" y="950" class="t-note mono" style="font-size:9.5px">conversation:{id}:history | :medical_slots | :summary…</text>
+  </g>
+
+  <!-- ============================================================ L5 DB -->
+  <line x1="583" y1="982" x2="583" y2="1000" stroke="#6FA9CF" stroke-width="2" marker-end="url(#arrMain)"/>
+  <g id="lane-db">
+    <rect x="50" y="1002" width="1066" height="176" rx="18" fill="#FFFFFF" fill-opacity="0.9" stroke="#D5E3ED" stroke-width="1.4"/>
+    <rect x="50" y="1002" width="6" height="176" rx="3" fill="#5B8DEF"/>
+    <text x="72" y="1026" class="t-lane" style="font-size:13.5px;fill:#4A6FBF">DB · 数据层</text>
+    <text x="205" y="1026" class="t-note" style="font-size:10px;letter-spacing:1px">DATA · REPOSITORY</text>
+
+    <rect x="74" y="1040" width="300" height="124" rx="11" fill="#FFFFFF" stroke="#D9E9F4" filter="url(#shadow)"/>
+    <text x="90" y="1060" class="t-mod" style="font-size:12px">Repository · 仓储模式</text>
+    <text x="90" y="1078" class="t-txt mono" style="font-size:10px">db/repositories/ · db/db_router.py</text>
+    <text x="90" y="1096" class="t-txt" style="font-size:10.5px">面向 Repository 统一访问</text>
+    <text x="90" y="1112" class="t-txt" style="font-size:10.5px">SQLite / MySQL 双库透明切换</text>
+    <text x="90" y="1150" class="t-note" style="font-size:10px">禁止跨层直连 DB（Agents 只经 Service）</text>
+
+    <rect x="386" y="1040" width="330" height="124" rx="11" fill="#FFFFFF" stroke="#D9E9F4" filter="url(#shadow)"/>
+    <text x="402" y="1060" class="t-mod" style="font-size:12px">核心模型 · db/models.py</text>
+    <text x="402" y="1082" class="t-note" style="font-size:10px">Doctor（医生） · DoctorSchedule（值班）</text>
+    <text x="402" y="1099" class="t-note" style="font-size:10px">Appointment（预约） · ConsultationRecord（问诊）</text>
+    <text x="402" y="1116" class="t-note" style="font-size:10px">KnowledgeDocument（知识） · RiskEvent（风险）</text>
+    <text x="402" y="1133" class="t-note" style="font-size:10px">MedicalPreference · HealthRecommendation</text>
+
+    <rect x="728" y="1040" width="376" height="124" rx="11" fill="#F2F9FE" stroke="#C9DDF0" filter="url(#shadow)"/>
+    <text x="744" y="1060" class="t-mod" style="font-size:12px">业务 / 档案数据存储</text>
+    <text x="744" y="1080" class="t-txt" style="font-size:10.5px">医生档案 · 排班 · 预约 · 问诊 · 风险事件</text>
+    <text x="744" y="1098" class="t-txt mono" style="font-size:10px">scripts/init_doctors（16 位）· init_schedules</text>
+    <text x="744" y="1120" class="t-txt" style="font-size:10.5px;font-weight:700;fill:#2C7CB8">MySQL（生产）　⇄　SQLite（本地 .db）</text>
+    <text x="744" y="1152" class="t-note" style="font-size:10px">migrate_sqlite_to_mysql.py 一键迁移</text>
+  </g>
+
+  <!-- ============================================================ 右侧 主请求链 -->
+  <g id="flow-col">
+    <line x1="1152" y1="150" x2="1152" y2="1140" stroke="#C9E0EE" stroke-width="2" stroke-dasharray="2 6"/>
+    <rect x="1140" y="134" width="268" height="28" rx="14" fill="url(#gradMain)" filter="url(#shadow)"/>
+    <text x="1274" y="152" text-anchor="middle" class="t-white" style="font-size:11px;font-weight:700;letter-spacing:1px">主请求链 · MAIN REQUEST FLOW</text>
+
+    <g transform="translate(1140,178)">
+      <circle cx="16" cy="0" r="12" fill="#3E9BD6"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">1</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">前端发起：登录取 Token</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">POST /chat/stream（Bearer）</text>
+    </g>
+    <g transform="translate(1140,236)">
+      <circle cx="16" cy="0" r="12" fill="#3E9BD6"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">2</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">会话校验 + 状态恢复</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">auth:token + conversation: 载入</text>
+    </g>
+    <g transform="translate(1140,300)">
+      <circle cx="16" cy="0" r="12" fill="url(#gradMain)"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">3</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">中枢任务分类与路由</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">doctor / appointment / faq / emergency / chat</text>
+    </g>
+    <g transform="translate(1140,382)">
+      <circle cx="16" cy="0" r="12" fill="url(#gradTeal)"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">4</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">子 Agent 处理</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">ConsultantAgent 问诊/RAG · AppointmentAgent 预约</text>
+    </g>
+    <g transform="translate(1140,464)">
+      <circle cx="16" cy="0" r="12" fill="url(#gradTeal)"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">5</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">服务层执行</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">知识检索（向量+全文+RRF）/ 业务编排</text>
+    </g>
+    <g transform="translate(1140,546)">
+      <circle cx="16" cy="0" r="12" fill="#5B8DEF"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">6</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">读写存储</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">MySQL 业务 · Redis 会话 · Zilliz 向量</text>
+    </g>
+    <g transform="translate(1140,680)">
+      <circle cx="16" cy="0" r="12" fill="#239A92"/><text x="16" y="4" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#fff">7</text>
+      <text x="38" y="-2" class="t-txt" style="font-size:10.5px">流式返回前端</text>
+      <text x="38" y="12" class="t-note" style="font-size:10px">SSE text/plain 逐字渲染 · 思考可见</text>
+    </g>
+  </g>
+
+  <!-- ============================================================ 外部依赖 -->
+  <g id="ext">
+    <rect x="50" y="1202" width="1350" height="196" rx="18" fill="#EFF9FB" stroke="#A9DBD4" stroke-width="1.5" stroke-dasharray="6 5"/>
+    <text x="72" y="1228" style="font-size:13.5px;font-weight:800;fill:#239A92">外部依赖 · External</text>
+    <text x="250" y="1228" class="t-note" style="font-size:10px;letter-spacing:1px">虚线 = 可选 / 优雅降级组件</text>
+
+    <!-- 行1：4 卡 -->
+    <rect x="74" y="1242" width="318" height="68" rx="11" fill="#FFFFFF" stroke="#BFE1DD" filter="url(#shadow)"/>
+    <circle cx="90" cy="1256" r="4.5" fill="#2FB6AC"/>
+    <text x="102" y="1262" class="t-mod" style="font-size:12px">Zilliz Cloud Milvus 向量库</text>
+    <text x="102" y="1280" class="t-txt" style="font-size:10px">100 万医学问答向量 · 768 维（PCA）</text>
+    <text x="102" y="1296" class="t-note mono" style="font-size:9.5px">collection campus_care_st</text>
+
+    <rect x="404" y="1242" width="318" height="68" rx="11" fill="#FFFFFF" stroke="#BFE1DD" filter="url(#shadow)"/>
+    <circle cx="420" cy="1256" r="4.5" fill="#2FB6AC"/>
+    <text x="432" y="1262" class="t-mod" style="font-size:12px">MySQL / SQLite</text>
+    <text x="432" y="1280" class="t-txt" style="font-size:10px">业务数据持久化（医生 / 预约 / 问诊 / 风险）</text>
+    <text x="432" y="1296" class="t-note" style="font-size:10px">本地 SQLite .db 兜底 · 迁移脚本</text>
+
+    <rect x="734" y="1242" width="318" height="68" rx="11" fill="#FFFFFF" stroke="#BFE1DD" filter="url(#shadow)"/>
+    <circle cx="750" cy="1256" r="4.5" fill="#2FB6AC"/>
+    <text x="762" y="1262" class="t-mod" style="font-size:12px">LLM API · Provider 工厂</text>
+    <text x="762" y="1280" class="t-txt" style="font-size:10px">openai-compatible / qwen / deepseek</text>
+    <text x="762" y="1296" class="t-txt" style="font-size:10px">zhipu（GLM JSON Mode）/ azure / volcengine</text>
+
+    <rect x="1064" y="1242" width="318" height="68" rx="11" fill="#FFFFFF" stroke="#BFE1DD" filter="url(#shadow)"/>
+    <circle cx="1080" cy="1256" r="4.5" fill="#2FB6AC"/>
+    <text x="1092" y="1262" class="t-mod" style="font-size:12px">BGE-M3 Embedding（本地）</text>
+    <text x="1092" y="1280" class="t-txt" style="font-size:10px">FlagEmbedding · 离线向量 · 1024 维</text>
+    <text x="1092" y="1296" class="t-note mono" style="font-size:9.5px">查询经 PCA 降 768 与库内匹配</text>
+
+    <!-- 行2 -->
+    <rect x="74" y="1320" width="318" height="62" rx="11" fill="#FBFDFE" stroke="#C5D7E3" stroke-dasharray="5 4"/>
+    <circle cx="90" cy="1334" r="4.5" fill="#3E9BD6"/>
+    <text x="102" y="1340" class="t-mod" style="font-size:11.5px;fill:#5A7184">Redis（可选降级）</text>
+    <text x="102" y="1357" class="t-note" style="font-size:9.5px">Token / 会话状态 / 对话记忆（无 Redis 自动内存）</text>
+
+    <rect x="404" y="1320" width="318" height="62" rx="11" fill="#FBFDFE" stroke="#C5D7E3" stroke-dasharray="5 4"/>
+    <circle cx="420" cy="1334" r="4.5" fill="#3E9BD6"/>
+    <text x="432" y="1340" class="t-mod" style="font-size:11.5px;fill:#5A7184">Langfuse（可选可观测）</text>
+    <text x="432" y="1357" class="t-note" style="font-size:9.5px">LLM 调用全链路 trace（未配 key 优雅降级）</text>
+
+    <rect x="734" y="1320" width="318" height="62" rx="11" fill="#FBFDFE" stroke="#C5D7E3" stroke-dasharray="5 4"/>
+    <circle cx="750" cy="1334" r="4.5" fill="#3E9BD6"/>
+    <text x="762" y="1340" class="t-mod" style="font-size:11.5px;fill:#5A7184">Pinecone / FAISS（备选向量后端）</text>
+    <text x="762" y="1357" class="t-note" style="font-size:9.5px">向量库不可用时回退 · 同一检索接口</text>
+
+    <rect x="1064" y="1320" width="318" height="62" rx="11" fill="#FBFDFE" stroke="#C5D7E3" stroke-dasharray="5 4"/>
+    <circle cx="1080" cy="1334" r="4.5" fill="#3E9BD6"/>
+    <text x="1092" y="1340" class="t-mod" style="font-size:11.5px;fill:#5A7184">验证码短信（未接入）</text>
+    <text x="1092" y="1357" class="t-note" style="font-size:9.5px">当前为演示直返验证码，预留短信通道</text>
+  </g>
+
+  <!-- ============================================================ 图例 / 说明 -->
+  <g id="legend" transform="translate(50,1420)">
+    <rect x="0" y="0" width="1350" height="72" rx="14" fill="#FFFFFF" stroke="#E2EEF6"/>
+    <text x="24" y="28" class="t-mod" style="font-size:12px">图例</text>
+    <!-- 线型 -->
+    <line x1="24" y1="48" x2="74" y2="48" stroke="#6FA9CF" stroke-width="2.4" marker-end="url(#arrMain)"/>
+    <text x="84" y="52" class="t-note" style="font-size:10.5px">主调用链 / 单向依赖（禁止反向）</text>
+    <line x1="360" y1="48" x2="410" y2="48" stroke="#5BC2B7" stroke-width="2" stroke-dasharray="5 4"/>
+    <text x="420" y="52" class="t-note" style="font-size:10.5px">可选 · 优雅降级 / 旁路组件</text>
+    <rect x="560" y="40" width="18" height="18" rx="4" fill="url(#gradMain)"/>
+    <text x="586" y="53" class="t-note" style="font-size:10.5px">Agents 层（核心智能体）</text>
+    <rect x="760" y="40" width="18" height="18" rx="4" fill="#E7F6F4" stroke="#C9E8E3"/>
+    <text x="786" y="53" class="t-note" style="font-size:10.5px">重点服务 / 检索服务</text>
+    <text x="24" y="20" class="t-note" style="font-size:10px"></text>
+    <text x="1020" y="45" class="t-note" style="font-size:10px">架构分层调用：Web → API → Agents → Services → DB</text>
+    <text x="1020" y="61" class="t-note" style="font-size:10px">Agent 不直连 DB，一律经 Service / Repository</text>
+  </g>
+
+  <text x="720" y="1518" text-anchor="middle" class="t-note" style="font-size:10px">部署基线：Zilliz Cloud（Milvus 托管）· MySQL · Redis · Langfuse（均可本地/内存降级）　·　v2.2.0-milvus　·　CampusCare_Agent</text>
+</svg>
